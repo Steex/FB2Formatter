@@ -36,8 +36,7 @@ namespace FB2Formatter
 			{
 				FileName = Name;
 			}
-
-			if (Format == "image/png")
+			else if (Format == "image/png")
 			{
 				FileName = Name + ".png";
 			}
