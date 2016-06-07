@@ -1,0 +1,1 @@
+﻿The simple tool to work with images in FB2 books.
