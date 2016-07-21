@@ -146,7 +146,7 @@ namespace FB2Formatter
 					}
 
 					// Write binary element
-					writer.WriteLine(" <binary content-type=\"{0}\" id=\"{1}\">", binary.Format, binary.Name);
+					writer.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", binary.Format, binary.Name);
 					foreach (string chunk in SplitStringBy(Convert.ToBase64String(binary.Content), 80))
 					{
 						writer.WriteLine("  " + chunk);
@@ -200,7 +200,7 @@ namespace FB2Formatter
 			{
 				foreach (BookAttachment picture in EnumBookPictures(book))
 				{
-					wr.WriteLine(" <binary content-type=\"{0}\" id=\"{1}\">", picture.Format, picture.Name);
+					wr.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", picture.Format, picture.Name);
 
 					foreach (string chunk in SplitStringBy(Convert.ToBase64String(picture.Content), 80))
 					{
@@ -218,7 +218,7 @@ namespace FB2Formatter
 			{
 				foreach (BookAttachment picture in EnumFolderPictures(sourceFolder))
 				{
-					wr.WriteLine(" <binary content-type=\"{0}\" id=\"{1}\">", picture.Format, picture.Name);
+					wr.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", picture.Format, picture.Name);
 
 					foreach (string chunk in SplitStringBy(Convert.ToBase64String(picture.Content), 80))
 					{
@@ -238,7 +238,7 @@ namespace FB2Formatter
 				{
 					BookAttachment picture = new BookAttachment(file);
 
-					wr.WriteLine(" <binary content-type=\"{0}\" id=\"{1}\">", picture.Format, picture.Name);
+					wr.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", picture.Format, picture.Name);
 
 					foreach (string chunk in SplitStringBy(Convert.ToBase64String(picture.Content), 80))
 					{
