@@ -10,6 +10,22 @@ namespace FB2Formatter
 {
 	public static class BookUtils
 	{
+		private class BinaryElementInfo
+		{
+			// The first line of the element.
+			public int StartLine { get; set; }
+			// Position of the first symbol.
+			public int StartOffset { get; set; }
+			// The last line of the element.
+			public int EndLine { get; set; }
+			// Position _after_ the last symbol.
+			public int EndOffset { get; set; }
+			public string Name { get; set; }
+			public string Format { get; set; }
+			public byte[] Content { get; set; }
+		}
+
+
 		public static XmlDocument OpenBook(string path)
 		{
 			XmlDocument book = new XmlDocument();
@@ -45,7 +61,125 @@ namespace FB2Formatter
 		}
 
 
-		public static void ExtractBookPictures(string sourceFile, string targetFolder)
+		public static void FormatBookPictures(string sourceFile, string targetFile)
+		{
+			// Collect binary items and determine encoding.
+			Encoding encoding = null;
+			List<BinaryElementInfo> binaries = new List<BinaryElementInfo>();
+			BinaryElementInfo currentBinary = null;
+
+			using (XmlTextReader reader = new XmlTextReader(sourceFile))
+			{
+				while (reader.Read())
+				{
+					switch (reader.NodeType)
+					{
+						case XmlNodeType.XmlDeclaration:
+							encoding = Encoding.GetEncoding(reader["encoding"]);
+							break;
+						case XmlNodeType.Element:
+							if (reader.Name == "binary")
+							{
+								currentBinary = new BinaryElementInfo();
+								currentBinary.StartLine = reader.LineNumber - 1;
+								currentBinary.StartOffset = reader.LinePosition - 1 - 1; // consider starting "<" symbol
+								currentBinary.Name = reader["id"];
+								currentBinary.Format = reader["content-type"];
+							}
+							break;
+						case XmlNodeType.EndElement:
+							if (reader.Name == "binary")
+							{
+								currentBinary.EndLine = reader.LineNumber - 1;
+								currentBinary.EndOffset = reader.LinePosition + 7 - 1; // consider "binary>" symbols after "</" sequence
+								binaries.Add(currentBinary);
+							}
+							break;
+						case XmlNodeType.Text:
+							if (currentBinary != null)
+							{
+								currentBinary.Content = Convert.FromBase64String(reader.Value);
+							}
+							break;
+					}
+				}
+			}
+
+			// Read the book as a text file and replace binary content.
+			string[] lines = File.ReadAllLines(sourceFile, encoding);
+
+			using (StreamWriter writer = new StreamWriter(targetFile, false, encoding))
+			{
+				int currentLine = 0;
+				int currentChar = 0;
+
+				foreach (BinaryElementInfo binary in binaries)
+				{
+					// Write all preceding lines
+					while (currentLine < binary.StartLine)
+					{
+						if (currentChar > 0)
+						{
+							string remainder = lines[currentLine].Substring(currentChar);
+							if (!string.IsNullOrWhiteSpace(remainder))
+							{
+								writer.WriteLine(remainder.Trim());
+							}
+						}
+						else
+						{
+							writer.WriteLine(lines[currentLine]);
+						}
+
+						++currentLine;
+						currentChar = 0;
+					}
+
+					// Write significant preceding characters.
+					if (binary.StartOffset > currentChar)
+					{
+						string inclusion = lines[currentLine].Substring(currentChar, binary.StartOffset - currentChar);
+						if (!string.IsNullOrWhiteSpace(inclusion))
+						{
+							writer.WriteLine(inclusion.TrimEnd());
+						}
+					}
+
+					// Write binary element
+					writer.WriteLine(" <binary content-type=\"{0}\" id=\"{1}\">", binary.Format, binary.Name);
+					foreach (string chunk in SplitStringBy(Convert.ToBase64String(binary.Content), 80))
+					{
+						writer.WriteLine("  " + chunk);
+					}
+					writer.WriteLine(" </binary>");
+
+					currentLine = binary.EndLine;
+					currentChar = binary.EndOffset;
+				}
+
+				// Write the possible line remainder.
+				if (currentChar > 0)
+				{
+					string remainder = lines[currentLine].Substring(currentChar);
+					if (!string.IsNullOrWhiteSpace(remainder))
+					{
+						writer.WriteLine(remainder.TrimStart());
+					}
+
+					++currentLine;
+					currentChar = 0;
+				}
+
+				// Write the remaining lines.
+				while (currentLine < lines.Length)
+				{
+					writer.WriteLine(lines[currentLine]);
+					++currentLine;
+				}
+			}
+		}
+
+		public static void ExtractPicturesToFiles(string sourceFile, string targetFolder)
 		{
 			XmlDocument book = OpenBook(sourceFile);
 
@@ -57,7 +191,7 @@ namespace FB2Formatter
 			}
 		}
 
-		public static void FormatBookPictures(string sourceFile, string targetFile)
+		public static void ExtractPicturesToXml(string sourceFile, string targetFile)
 		{
 			XmlDocument book = OpenBook(sourceFile);
 
@@ -78,7 +212,7 @@ namespace FB2Formatter
 			}
 		}
 
-		public static void ComposeFolderPictures(string sourceFolder, string targetFile)
+		public static void ConvertFolderPicturesToXml(string sourceFolder, string targetFile)
 		{
 			using (StreamWriter wr = new StreamWriter(targetFile, false, Encoding.ASCII))
 			{
@@ -96,7 +230,7 @@ namespace FB2Formatter
 			}
 		}
 
-		public static void ComposeListPictures(IEnumerable<string> sourceFiles, string targetFile)
+		public static void ConvertListPicturesToXml(IEnumerable<string> sourceFiles, string targetFile)
 		{
 			using (StreamWriter wr = new StreamWriter(targetFile, false, Encoding.ASCII))
 			{

@@ -20,7 +20,7 @@ namespace FB2Formatter
 		}
 
 
-		private void panelFormatPicturesDroplet_DragEnter(object sender, DragEventArgs e)
+		private void panelFormatBookPicturesDroplet_DragEnter(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -32,7 +32,34 @@ namespace FB2Formatter
 			}
 		}
 
-		private void panelFormatPicturesDroplet_DragDrop(object sender, DragEventArgs e)
+		private void panelFormatBookPicturesDroplet_DragDrop(object sender, DragEventArgs e)
+		{
+			if (e.Data.GetDataPresent("FileDrop"))
+			{
+				string[] paths = (string[])e.Data.GetData("FileDrop");
+
+				foreach (string path in paths.Where(p => Path.GetExtension(p) == ".fb2" && File.Exists(p)))
+				{
+					string sourceFile = path;
+					string targetFile = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "_fmt.txt");
+					BookUtils.FormatBookPictures(sourceFile, targetFile);
+				}
+			}
+		}
+
+		private void panelExtractPicturesToXmlDroplet_DragEnter(object sender, DragEventArgs e)
+		{
+			if (e.Data.GetDataPresent("FileDrop"))
+			{
+				e.Effect = DragDropEffects.Link;
+			}
+			else
+			{
+				e.Effect = DragDropEffects.None;
+			}
+		}
+
+		private void panelExtractPicturesToXmlDroplet_DragDrop(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -42,12 +69,12 @@ namespace FB2Formatter
 				{
 					string sourceFile = path;
 					string targetFile = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "_images.txt");
-					BookUtils.FormatBookPictures(sourceFile, targetFile);
+					BookUtils.ExtractPicturesToXml(sourceFile, targetFile);
 				}
 			}
 		}
 
-		private void panelExtractPicturesDroplet_DragEnter(object sender, DragEventArgs e)
+		private void panelExtractPicturesToFilesDroplet_DragEnter(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -59,7 +86,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private void panelExtractPicturesDroplet_DragDrop(object sender, DragEventArgs e)
+		private void panelExtractPicturesToFilesDroplet_DragDrop(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -69,12 +96,12 @@ namespace FB2Formatter
 				{
 					string sourceFile = path;
 					string targetFolder = Path.ChangeExtension(path, "");
-					BookUtils.ExtractBookPictures(sourceFile, targetFolder);
+					BookUtils.ExtractPicturesToFiles(sourceFile, targetFolder);
 				}
 			}
 		}
 
-		private void panelComposePicturesDroplet_DragEnter(object sender, DragEventArgs e)
+		private void panelConvertPicturesToXmlDroplet_DragEnter(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -86,7 +113,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private void panelComposePicturesDroplet_DragDrop(object sender, DragEventArgs e)
+		private void panelConvertPicturesToXmlDroplet_DragDrop(object sender, DragEventArgs e)
 		{
 			string[] pictureExtensions = new string[] { ".png", ".jpg", ".jpeg" };
 
@@ -101,12 +128,12 @@ namespace FB2Formatter
 				{
 					foreach (string folder in folders)
 					{
-						BookUtils.ComposeFolderPictures(folder, folder + "_images.txt");
+						BookUtils.ConvertFolderPicturesToXml(folder, folder + "_images.txt");
 					}
 				}
 				else if (!folders.Any() && pictures.Any())
 				{
-					BookUtils.ComposeListPictures(pictures, Path.Combine(Path.GetDirectoryName(pictures.First()), "images.txt"));
+					BookUtils.ConvertListPicturesToXml(pictures, Path.Combine(Path.GetDirectoryName(pictures.First()), "images.txt"));
 				}
 			}
 		}
