@@ -41,7 +41,7 @@ namespace FB2Formatter
 				foreach (string path in paths.Where(p => Path.GetExtension(p) == ".fb2" && File.Exists(p)))
 				{
 					string sourceFile = path;
-					string targetFile = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "_fmt.txt");
+					string targetFile = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "_fmt.fb2");
 					BookUtils.FormatBookPictures(sourceFile, targetFile);
 				}
 			}
