@@ -37,6 +37,9 @@
 			// 
 			// textLog
 			// 
+			this.textLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.textLog.Location = new System.Drawing.Point(12, 400);
 			this.textLog.Multiline = true;
 			this.textLog.Name = "textLog";
@@ -47,6 +50,9 @@
 			// 
 			// dropletConvertPicturesToXml
 			// 
+			this.dropletConvertPicturesToXml.AllowDrop = true;
+			this.dropletConvertPicturesToXml.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.dropletConvertPicturesToXml.BackColor = System.Drawing.Color.Silver;
 			this.dropletConvertPicturesToXml.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.dropletConvertPicturesToXml.Info = "Drop a bunch of picture files here to assemble them into an xml file.\r\nAlternativ" +
@@ -62,6 +68,9 @@
 			// 
 			// dropletExtractPicturesToFiles
 			// 
+			this.dropletExtractPicturesToFiles.AllowDrop = true;
+			this.dropletExtractPicturesToFiles.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.dropletExtractPicturesToFiles.BackColor = System.Drawing.Color.Silver;
 			this.dropletExtractPicturesToFiles.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.dropletExtractPicturesToFiles.Info = "Drop books here to extract pictures into folders (separate folder is created for " +
@@ -76,6 +85,9 @@
 			// 
 			// dropletExtractPicturesToXml
 			// 
+			this.dropletExtractPicturesToXml.AllowDrop = true;
+			this.dropletExtractPicturesToXml.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.dropletExtractPicturesToXml.BackColor = System.Drawing.Color.Silver;
 			this.dropletExtractPicturesToXml.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.dropletExtractPicturesToXml.Info = "Drop books here to create xml files with formatted images.";
@@ -89,6 +101,9 @@
 			// 
 			// dropletFormatBookPictures
 			// 
+			this.dropletFormatBookPictures.AllowDrop = true;
+			this.dropletFormatBookPictures.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
 			this.dropletFormatBookPictures.BackColor = System.Drawing.Color.Silver;
 			this.dropletFormatBookPictures.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.dropletFormatBookPictures.Info = "Drop books here to create copies with formatted images.\r\nOriginal book files will" +
