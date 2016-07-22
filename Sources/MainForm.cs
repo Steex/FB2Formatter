@@ -20,19 +20,13 @@ namespace FB2Formatter
 		}
 
 
-		private void panelFormatBookPicturesDroplet_DragEnter(object sender, DragEventArgs e)
+		private void droplet_DragEnter(object sender, DragEventArgs e)
 		{
-			if (e.Data.GetDataPresent("FileDrop"))
-			{
-				e.Effect = DragDropEffects.Link;
-			}
-			else
-			{
-				e.Effect = DragDropEffects.None;
-			}
+			e.Effect = e.Data.GetDataPresent("FileDrop") ? DragDropEffects.Link : DragDropEffects.None;
+
 		}
 
-		private void panelFormatBookPicturesDroplet_DragDrop(object sender, DragEventArgs e)
+		private void dropletFormatBookPictures_DragDrop(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -47,19 +41,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private void panelExtractPicturesToXmlDroplet_DragEnter(object sender, DragEventArgs e)
-		{
-			if (e.Data.GetDataPresent("FileDrop"))
-			{
-				e.Effect = DragDropEffects.Link;
-			}
-			else
-			{
-				e.Effect = DragDropEffects.None;
-			}
-		}
-
-		private void panelExtractPicturesToXmlDroplet_DragDrop(object sender, DragEventArgs e)
+		private void dropletExtractPicturesToXml_DragDrop(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -74,19 +56,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private void panelExtractPicturesToFilesDroplet_DragEnter(object sender, DragEventArgs e)
-		{
-			if (e.Data.GetDataPresent("FileDrop"))
-			{
-				e.Effect = DragDropEffects.Link;
-			}
-			else
-			{
-				e.Effect = DragDropEffects.None;
-			}
-		}
-
-		private void panelExtractPicturesToFilesDroplet_DragDrop(object sender, DragEventArgs e)
+		private void dropletExtractPicturesToFiles_DragDrop(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))
 			{
@@ -101,19 +71,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private void panelConvertPicturesToXmlDroplet_DragEnter(object sender, DragEventArgs e)
-		{
-			if (e.Data.GetDataPresent("FileDrop"))
-			{
-				e.Effect = DragDropEffects.Link;
-			}
-			else
-			{
-				e.Effect = DragDropEffects.None;
-			}
-		}
-
-		private void panelConvertPicturesToXmlDroplet_DragDrop(object sender, DragEventArgs e)
+		private void dropletConvertPicturesToXml_DragDrop(object sender, DragEventArgs e)
 		{
 			string[] pictureExtensions = new string[] { ".png", ".jpg", ".jpeg" };
 

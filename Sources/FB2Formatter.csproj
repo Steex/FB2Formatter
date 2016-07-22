@@ -48,6 +48,12 @@
   <ItemGroup>
     <Compile Include="BookAttachment.cs" />
     <Compile Include="BookUtils.cs" />
+    <Compile Include="Droplet.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Droplet.Designer.cs">
+      <DependentUpon>Droplet.cs</DependentUpon>
+    </Compile>
     <Compile Include="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -56,6 +62,9 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Droplet.resx">
+      <DependentUpon>Droplet.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
