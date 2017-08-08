@@ -33,6 +33,7 @@
 			this.dropletExtractPicturesToFiles = new FB2Formatter.Droplet();
 			this.dropletExtractPicturesToXml = new FB2Formatter.Droplet();
 			this.dropletFormatBookPictures = new FB2Formatter.Droplet();
+			this.dropletFormatBooks = new FB2Formatter.Droplet();
 			this.SuspendLayout();
 			// 
 			// textLog
@@ -40,12 +41,12 @@
 			this.textLog.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-			this.textLog.Location = new System.Drawing.Point(12, 400);
+			this.textLog.Location = new System.Drawing.Point(12, 482);
 			this.textLog.Multiline = true;
 			this.textLog.Name = "textLog";
 			this.textLog.ReadOnly = true;
 			this.textLog.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-			this.textLog.Size = new System.Drawing.Size(602, 155);
+			this.textLog.Size = new System.Drawing.Size(602, 99);
 			this.textLog.TabIndex = 5;
 			// 
 			// dropletConvertPicturesToXml
@@ -58,7 +59,7 @@
 			this.dropletConvertPicturesToXml.Info = "Drop a bunch of picture files here to assemble them into an xml file.\r\nAlternativ" +
     "ely you can drop folders with pictures. In this case a separate file will be cre" +
     "ated for each folder.";
-			this.dropletConvertPicturesToXml.Location = new System.Drawing.Point(12, 288);
+			this.dropletConvertPicturesToXml.Location = new System.Drawing.Point(12, 380);
 			this.dropletConvertPicturesToXml.Name = "dropletConvertPicturesToXml";
 			this.dropletConvertPicturesToXml.Size = new System.Drawing.Size(602, 86);
 			this.dropletConvertPicturesToXml.TabIndex = 9;
@@ -75,7 +76,7 @@
 			this.dropletExtractPicturesToFiles.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.dropletExtractPicturesToFiles.Info = "Drop books here to extract pictures into folders (separate folder is created for " +
     "each book).";
-			this.dropletExtractPicturesToFiles.Location = new System.Drawing.Point(12, 196);
+			this.dropletExtractPicturesToFiles.Location = new System.Drawing.Point(12, 288);
 			this.dropletExtractPicturesToFiles.Name = "dropletExtractPicturesToFiles";
 			this.dropletExtractPicturesToFiles.Size = new System.Drawing.Size(602, 86);
 			this.dropletExtractPicturesToFiles.TabIndex = 8;
@@ -91,7 +92,7 @@
 			this.dropletExtractPicturesToXml.BackColor = System.Drawing.Color.Silver;
 			this.dropletExtractPicturesToXml.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.dropletExtractPicturesToXml.Info = "Drop books here to create xml files with formatted images.";
-			this.dropletExtractPicturesToXml.Location = new System.Drawing.Point(12, 104);
+			this.dropletExtractPicturesToXml.Location = new System.Drawing.Point(12, 196);
 			this.dropletExtractPicturesToXml.Name = "dropletExtractPicturesToXml";
 			this.dropletExtractPicturesToXml.Size = new System.Drawing.Size(602, 86);
 			this.dropletExtractPicturesToXml.TabIndex = 7;
@@ -108,7 +109,7 @@
 			this.dropletFormatBookPictures.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
 			this.dropletFormatBookPictures.Info = "Drop books here to create copies with formatted images.\r\nOriginal book files will" +
     " not change.";
-			this.dropletFormatBookPictures.Location = new System.Drawing.Point(12, 12);
+			this.dropletFormatBookPictures.Location = new System.Drawing.Point(12, 104);
 			this.dropletFormatBookPictures.Name = "dropletFormatBookPictures";
 			this.dropletFormatBookPictures.Size = new System.Drawing.Size(602, 86);
 			this.dropletFormatBookPictures.TabIndex = 6;
@@ -116,14 +117,32 @@
 			this.dropletFormatBookPictures.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropletFormatBookPictures_DragDrop);
 			this.dropletFormatBookPictures.DragEnter += new System.Windows.Forms.DragEventHandler(this.droplet_DragEnter);
 			// 
+			// dropletFormatBooks
+			// 
+			this.dropletFormatBooks.AllowDrop = true;
+			this.dropletFormatBooks.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+			this.dropletFormatBooks.BackColor = System.Drawing.Color.Silver;
+			this.dropletFormatBooks.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+			this.dropletFormatBooks.Info = "Drop books here to create formatted copies.\r\nOriginal book files will not change." +
+    "";
+			this.dropletFormatBooks.Location = new System.Drawing.Point(12, 12);
+			this.dropletFormatBooks.Name = "dropletFormatBooks";
+			this.dropletFormatBooks.Size = new System.Drawing.Size(602, 86);
+			this.dropletFormatBooks.TabIndex = 6;
+			this.dropletFormatBooks.Title = "Format Books";
+			this.dropletFormatBooks.DragDrop += new System.Windows.Forms.DragEventHandler(this.dropletFormatBooks_DragDrop);
+			this.dropletFormatBooks.DragEnter += new System.Windows.Forms.DragEventHandler(this.droplet_DragEnter);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(626, 567);
+			this.ClientSize = new System.Drawing.Size(626, 593);
 			this.Controls.Add(this.dropletConvertPicturesToXml);
 			this.Controls.Add(this.dropletExtractPicturesToFiles);
 			this.Controls.Add(this.dropletExtractPicturesToXml);
+			this.Controls.Add(this.dropletFormatBooks);
 			this.Controls.Add(this.dropletFormatBookPictures);
 			this.Controls.Add(this.textLog);
 			this.Name = "MainForm";
@@ -140,6 +159,7 @@
 		private Droplet dropletExtractPicturesToXml;
 		private Droplet dropletExtractPicturesToFiles;
 		private Droplet dropletConvertPicturesToXml;
+		private Droplet dropletFormatBooks;
 	}
 }
 

@@ -26,6 +26,22 @@ namespace FB2Formatter
 
 		}
 
+
+		private void dropletFormatBooks_DragDrop(object sender, DragEventArgs e)
+		{
+			if (e.Data.GetDataPresent("FileDrop"))
+			{
+				string[] paths = (string[])e.Data.GetData("FileDrop");
+
+				foreach (string path in paths.Where(p => Path.GetExtension(p) == ".fb2" && File.Exists(p)))
+				{
+					string sourceFile = path;
+					string targetFile = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "_fmt.fb2");
+					BookUtils.FormatBooks(sourceFile, targetFile);
+				}
+			}
+		}
+
 		private void dropletFormatBookPictures_DragDrop(object sender, DragEventArgs e)
 		{
 			if (e.Data.GetDataPresent("FileDrop"))

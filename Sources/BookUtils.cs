@@ -61,6 +61,10 @@ namespace FB2Formatter
 		}
 
 
+		public static void FormatBooks(string sourceFile, string targetFile)
+		{
+		}
+
 		public static void FormatBookPictures(string sourceFile, string targetFile)
 		{
 			// Collect binary items and determine encoding.
