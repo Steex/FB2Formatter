@@ -10,6 +10,132 @@ namespace FB2Formatter
 {
 	public static class BookUtils
 	{
+		private enum WhitespaceProcessMode
+		{
+			RemoveAll,
+			RemoveExtra,
+			KeepAll,
+		}
+
+
+		private class BookNodeInfo
+		{
+			// Name of node tag without angle brackets. Example: "section"
+			public string Name { get; set; }
+			// Whitespace processing mode at the current node and the default mode for all its subnodes.
+			public WhitespaceProcessMode WhitespaceMode { get; set; }
+			// True if the node does not contain another nodes.
+			public bool Empty { get; set; }
+
+			public BookNodeInfo(string name, WhitespaceProcessMode whitespaceMode)
+			{
+				Name = name;
+				WhitespaceMode = whitespaceMode;
+				Empty = true;
+			}
+		}
+
+		private class BookNodeStack
+		{
+			private static readonly HashSet<String> normalTextTags = new HashSet<String> {
+				/*formatted text*/ "p", "v", "subtitle", "text-author", "th", "td",
+				/*author*/         "first-name", "middle-name", "last-name", "nickname", "home-page", "email",
+				/*title-info*/     "book-title", "keywords", "date",
+				/*document-info*/  "src-url", "src-ocr", "version", "program-used",
+				/*publish-info*/   "book-name", "publisher", "city", "year"
+			};
+
+			private static readonly HashSet<String> preformattedTextTags = new HashSet<String> { "code" };
+
+			private WhitespaceProcessMode defaultWhitespaceMode;
+			private Stack<BookNodeInfo> items;
+
+			public int NodeLevel
+			{
+				get
+				{
+					return items.Count - 1;
+				}
+			}
+
+			public string NodeName
+			{
+				get
+				{
+					return items.Count > 0 ? items.Peek().Name : null;
+				}
+			}
+
+			public bool NodeEmpty
+			{
+				get
+				{
+					return items.Count > 0 ? items.Peek().Empty : true;
+				}
+			}
+
+			public WhitespaceProcessMode WhitespaceMode
+			{
+				get
+				{
+					return items.Count > 0 ? items.Peek().WhitespaceMode : defaultWhitespaceMode;
+				}
+			}
+
+
+			public BookNodeStack(WhitespaceProcessMode defaultWhitespaceMode)
+			{
+				this.defaultWhitespaceMode = defaultWhitespaceMode;
+				items = new Stack<BookNodeInfo>();
+			}
+
+			public void AddNode(string name)
+			{
+				// The current item is not empty anymore.
+				if (items.Any())
+				{
+					items.Peek().Empty = false;
+				}
+
+				// Determine the whitespace mode.
+				WhitespaceProcessMode whitespaceMode;
+				if (normalTextTags.Contains(name))
+				{
+					whitespaceMode = WhitespaceProcessMode.RemoveExtra;
+				}
+				else if (preformattedTextTags.Contains(name))
+				{
+					whitespaceMode = WhitespaceProcessMode.KeepAll;
+				}
+				else
+				{
+					whitespaceMode = WhitespaceProcessMode.RemoveAll;
+				}
+
+				// Add the new item.
+				items.Push(new BookNodeInfo(name, whitespaceMode));
+			}
+
+			public void DeleteNode(string name)
+			{
+				// Make sure the stack is not empty.
+				if (!items.Any())
+				{
+					throw new Exception("Node stack is empty.");
+				}
+
+				// Make sure the opening and the closing tags correspond.
+				if (items.Peek().Name != name)
+				{
+					throw new Exception(string.Format("Book node hierarchy is broken: open node: \"{0}\", closing node \"{1}\".", items.Peek().Name, name));
+				}
+
+				// Remove the item.
+				items.Pop();
+			}
+		}
+
+
 		private class BinaryElementInfo
 		{
 			// The first line of the element.
