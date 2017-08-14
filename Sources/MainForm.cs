@@ -37,7 +37,7 @@ namespace FB2Formatter
 				{
 					string sourceFile = path;
 					string targetFile = Path.Combine(Path.GetDirectoryName(path), Path.GetFileNameWithoutExtension(path) + "_fmt.fb2");
-					BookUtils.FormatBooks(sourceFile, targetFile);
+					BookUtils.FormatBook(sourceFile, targetFile);
 				}
 			}
 		}

@@ -10,11 +10,11 @@ namespace FB2Formatter
 {
 	public static class BookUtils
 	{
-		private enum WhitespaceProcessMode
+		private enum TextFormatMode
 		{
-			RemoveAll,
-			RemoveExtra,
-			KeepAll,
+			Structured,
+			Inline,
+			Preformatted,
 		}
 
 
@@ -22,32 +22,33 @@ namespace FB2Formatter
 		{
 			// Name of node tag without angle brackets. Example: "section"
 			public string Name { get; set; }
-			// Whitespace processing mode at the current node and the default mode for all its subnodes.
-			public WhitespaceProcessMode WhitespaceMode { get; set; }
+			// Text processing mode at the current node and the default mode for all its subnodes.
+			public TextFormatMode FormatMode { get; set; }
 			// True if the node does not contain another nodes.
 			public bool Empty { get; set; }
 
-			public BookNodeInfo(string name, WhitespaceProcessMode whitespaceMode)
+			public BookNodeInfo(string name, TextFormatMode formatMode)
 			{
 				Name = name;
-				WhitespaceMode = whitespaceMode;
+				FormatMode = formatMode;
 				Empty = true;
 			}
 		}
 
 		private class BookNodeStack
 		{
-			private static readonly HashSet<String> normalTextTags = new HashSet<String> {
+			private static readonly HashSet<String> inlineTextTags = new HashSet<String> {
 				/*formatted text*/ "p", "v", "subtitle", "text-author", "th", "td",
 				/*author*/         "first-name", "middle-name", "last-name", "nickname", "home-page", "email",
-				/*title-info*/     "book-title", "keywords", "date",
+				/*title-info*/     "genre", "id", "book-title", "lang", "keywords", "date",
 				/*document-info*/  "src-url", "src-ocr", "version", "program-used",
-				/*publish-info*/   "book-name", "publisher", "city", "year"
+				/*publish-info*/   "book-name", "publisher", "city", "year", "isbn",
+				/*custom-info*/    "custom-info"
 			};
 
 			private static readonly HashSet<String> preformattedTextTags = new HashSet<String> { "code" };
 
-			private WhitespaceProcessMode defaultWhitespaceMode;
+			private TextFormatMode defaultFormatMode;
 			private Stack<BookNodeInfo> items;
 
 			public int NodeLevel
@@ -74,18 +75,18 @@ namespace FB2Formatter
 				}
 			}
 
-			public WhitespaceProcessMode WhitespaceMode
+			public TextFormatMode FormatMode
 			{
 				get
 				{
-					return items.Count > 0 ? items.Peek().WhitespaceMode : defaultWhitespaceMode;
+					return items.Count > 0 ? items.Peek().FormatMode : defaultFormatMode;
 				}
 			}
 
 
-			public BookNodeStack(WhitespaceProcessMode defaultWhitespaceMode)
+			public BookNodeStack(TextFormatMode defaultFormatMode)
 			{
-				this.defaultWhitespaceMode = defaultWhitespaceMode;
+				this.defaultFormatMode = defaultFormatMode;
 				items = new Stack<BookNodeInfo>();
 			}
 
@@ -97,23 +98,29 @@ namespace FB2Formatter
 					items.Peek().Empty = false;
 				}
 
-				// Determine the whitespace mode.
-				WhitespaceProcessMode whitespaceMode;
-				if (normalTextTags.Contains(name))
+				// Determine the format mode.
+				TextFormatMode formatMode;
+				if (inlineTextTags.Contains(name))
 				{
-					whitespaceMode = WhitespaceProcessMode.RemoveExtra;
+					formatMode = TextFormatMode.Inline;
 				}
 				else if (preformattedTextTags.Contains(name))
 				{
-					whitespaceMode = WhitespaceProcessMode.KeepAll;
+					formatMode = TextFormatMode.Preformatted;
 				}
 				else
 				{
-					whitespaceMode = WhitespaceProcessMode.RemoveAll;
+					formatMode = TextFormatMode.Structured;
+				}
+
+				// Inner items cannot make the format mode more strict.
+				if (formatMode < FormatMode)
+				{
+					formatMode = FormatMode;
 				}
 
 				// Add the new item.
-				items.Push(new BookNodeInfo(name, whitespaceMode));
+				items.Push(new BookNodeInfo(name, formatMode));
 			}
 
 			public void DeleteNode(string name)
@@ -152,6 +159,10 @@ namespace FB2Formatter
 		}
 
 
+		private static readonly char indentSymbol = ' ';
+		private static readonly int indentLength = 1;
+
+
 		public static XmlDocument OpenBook(string path)
 		{
 			XmlDocument book = new XmlDocument();
@@ -187,9 +198,94 @@ namespace FB2Formatter
 		}
 
 
-		public static void FormatBooks(string sourceFile, string targetFile)
+		public static void FormatBook(string sourceFile, string targetFile)
 		{
+			BookNodeStack nodeStack = new BookNodeStack(TextFormatMode.Structured);
+			Encoding encoding = Encoding.UTF8;
+			StringBuilder output = new StringBuilder();
+
+			try
+			{
+				using (XmlTextReader reader = new XmlTextReader(sourceFile))
+				{
+					while (reader.Read())
+					{
+						//output.AppendLine(String.Format("{}", ))
+						switch (reader.NodeType)
+						{
+							case XmlNodeType.XmlDeclaration:
+								encoding = Encoding.GetEncoding(reader["encoding"]);
+								break;
+
+							case XmlNodeType.Element:
+								FormatBook_WriteElementOpeningTag(output, reader.Name, nodeStack.FormatMode, nodeStack.NodeLevel + 1);
+								if (reader.IsEmptyElement)
+								{
+									FormatBook_WriteEmptyElementCloser(output);
+								}
+								else
+								{
+									FormatBook_WriteElementCloser(output);
+								}
+
+								if (!reader.IsEmptyElement)
+								{
+									nodeStack.AddNode(reader.Name);
+								}
+								break;
+
+							case XmlNodeType.EndElement:
+								FormatBook_WriteElementClosingTag(output, reader.Name, nodeStack.FormatMode, nodeStack.NodeLevel);
+								nodeStack.DeleteNode(reader.Name);
+								break;
+
+							case XmlNodeType.Text:
+								break;
+						}
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+			}
+
+			//
+			File.WriteAllText(targetFile + ".txt", output.ToString(), encoding);
 		}
+
+		private static void FormatBook_WriteElementOpeningTag(StringBuilder output, string name, TextFormatMode formatMode, int level)
+		{
+			if (formatMode == TextFormatMode.Structured)
+			{
+				output.AppendLine();
+				output.Append(new string(indentSymbol, indentLength * level));
+			}
+
+			output.AppendFormat("<{0}", name);
+		}
+
+		private static void FormatBook_WriteElementClosingTag(StringBuilder output, string name, TextFormatMode formatMode, int level)
+		{
+			if (formatMode == TextFormatMode.Structured)
+			{
+				output.AppendLine();
+				output.Append(new string(indentSymbol, indentLength * level));
+			}
+
+			output.AppendFormat("</{0}>", name);
+		}
+
+		private static void FormatBook_WriteEmptyElementCloser(StringBuilder output)
+		{
+			output.Append("/>");
+		}
+
+		private static void FormatBook_WriteElementCloser(StringBuilder output)
+		{
+			output.Append(">");
+		}
+
+
 
 		public static void FormatBookPictures(string sourceFile, string targetFile)
 		{
