@@ -1,5 +1,6 @@
 /*.vshost.*
 /*.pdb
+/*.exe.config
 /Sources/obj
 /Sources/*.suo
 /.project
