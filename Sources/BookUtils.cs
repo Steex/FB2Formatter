@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using System.IO;
+using System.Web;
 
 
 namespace FB2Formatter
@@ -218,8 +219,13 @@ namespace FB2Formatter
 								break;
 
 							case XmlNodeType.Element:
-								FormatBook_WriteElementOpeningTag(output, reader.Name, nodeStack.FormatMode, nodeStack.NodeLevel + 1);
-								if (reader.IsEmptyElement)
+								string elementName = reader.Name;
+								bool elementEmpty = reader.IsEmptyElement;
+
+								FormatBook_WriteElementOpeningTag(output, elementName, nodeStack.FormatMode, nodeStack.NodeLevel + 1);
+								FormatBook_WriteElementAttributes(output, reader);
+
+								if (elementEmpty)
 								{
 									FormatBook_WriteEmptyElementCloser(output);
 								}
@@ -228,9 +234,9 @@ namespace FB2Formatter
 									FormatBook_WriteElementCloser(output);
 								}
 
-								if (!reader.IsEmptyElement)
+								if (!elementEmpty)
 								{
-									nodeStack.AddNode(reader.Name);
+									nodeStack.AddNode(elementName);
 								}
 								break;
 
@@ -285,6 +291,13 @@ namespace FB2Formatter
 			output.Append(">");
 		}
 
+		private static void FormatBook_WriteElementAttributes(StringBuilder output, XmlTextReader reader)
+		{
+			while (reader.MoveToNextAttribute())
+			{
+				output.AppendFormat(" {0}=\"{1}\"", reader.Name, HttpUtility.HtmlEncode(reader.Value));
+			}
+		}
 
 
 		public static void FormatBookPictures(string sourceFile, string targetFile)
