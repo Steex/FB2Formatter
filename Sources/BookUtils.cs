@@ -216,6 +216,7 @@ namespace FB2Formatter
 						{
 							case XmlNodeType.XmlDeclaration:
 								encoding = Encoding.GetEncoding(reader["encoding"]);
+								FormatBook_WriteDeclaration(output, reader.Value);
 								break;
 
 							case XmlNodeType.Element:
@@ -257,6 +258,11 @@ namespace FB2Formatter
 
 			//
 			File.WriteAllText(targetFile + ".txt", output.ToString(), encoding);
+		}
+
+		private static void FormatBook_WriteDeclaration(StringBuilder output, string content)
+		{
+			output.AppendFormat("<?xml {0}?>", content);
 		}
 
 		private static void FormatBook_WriteElementOpeningTag(StringBuilder output, string name, TextFormatMode formatMode, int level)
