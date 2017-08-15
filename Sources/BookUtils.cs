@@ -5,6 +5,7 @@ using System.Text;
 using System.Xml;
 using System.IO;
 using System.Web;
+using System.Globalization;
 
 
 namespace FB2Formatter
@@ -247,6 +248,7 @@ namespace FB2Formatter
 								break;
 
 							case XmlNodeType.Text:
+								FormatBook_WriteText(output, reader.Value, nodeStack.FormatMode);
 								break;
 						}
 					}
@@ -304,6 +306,56 @@ namespace FB2Formatter
 				output.AppendFormat(" {0}=\"{1}\"", reader.Name, HttpUtility.HtmlEncode(reader.Value));
 			}
 		}
+
+		private static void FormatBook_WriteText(StringBuilder output, string text, TextFormatMode formatMode)
+		{
+			switch (formatMode)
+			{
+				case TextFormatMode.Structured:
+					throw new Exception("Cannot write text in the current context.");
+
+				case TextFormatMode.Inline:
+					output.Append(text);
+					break;
+
+				case TextFormatMode.Preformatted:
+					output.Append(text);
+					break;
+			}
+		}
+
+		private static void FormatBook_WriteInlineText(StringBuilder output, string text)
+		{
+			bool allowWhitespace = true;
+			foreach (char chr in text)
+			{
+				UnicodeCategory charCategory = char.GetUnicodeCategory(chr);
+
+				// Skip control symbols
+				if (charCategory == UnicodeCategory.Control)
+				{
+					continue;
+				}
+
+				// Replace all simple whitespaces and line separators with single whitespace.
+				// Other symbols (including special whitespaces) are written as is.
+				bool isWhitespace = 
+					chr == ' ' ||
+					charCategory == UnicodeCategory.LineSeparator;
+
+				if (!isWhitespace)
+				{
+					output.Append(chr);
+					allowWhitespace = true;
+				}
+				else if (allowWhitespace)
+				{
+					output.Append(' ');
+					allowWhitespace = false;
+				}
+			}
+		}
+
 
 
 		public static void FormatBookPictures(string sourceFile, string targetFile)
