@@ -205,6 +205,8 @@ namespace FB2Formatter
 			BookNodeStack nodeStack = new BookNodeStack(TextFormatMode.Structured);
 			Encoding encoding = Encoding.UTF8;
 			StringBuilder output = new StringBuilder();
+			bool allowWhitespace = false;
+			bool binaryElement = false;
 
 			try
 			{
@@ -236,19 +238,40 @@ namespace FB2Formatter
 									FormatBook_WriteElementCloser(output);
 								}
 
+								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
+
 								if (!elementEmpty)
 								{
 									nodeStack.AddNode(elementName);
 								}
+
+								binaryElement = (elementName == "binary" && !elementEmpty);
 								break;
 
 							case XmlNodeType.EndElement:
 								FormatBook_WriteElementClosingTag(output, reader.Name, nodeStack.FormatMode, nodeStack.NodeLevel);
 								nodeStack.DeleteNode(reader.Name);
+								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
+								binaryElement = false;
+								break;
+
+							case XmlNodeType.Whitespace:
+							case XmlNodeType.SignificantWhitespace:
+								if (nodeStack.FormatMode != TextFormatMode.Structured)
+								{
+									FormatBook_WriteText(output, reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+								}
 								break;
 
 							case XmlNodeType.Text:
-								FormatBook_WriteText(output, reader.Value, nodeStack.FormatMode);
+								if (binaryElement)
+								{
+									FormatBook_WriteBinary(output, reader.Value, nodeStack.NodeLevel + 1);
+								}
+								else
+								{
+									FormatBook_WriteText(output, reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+								}
 								break;
 						}
 					}
@@ -307,7 +330,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private static void FormatBook_WriteText(StringBuilder output, string text, TextFormatMode formatMode)
+		private static void FormatBook_WriteText(StringBuilder output, string text, TextFormatMode formatMode, ref bool allowWhitespace)
 		{
 			switch (formatMode)
 			{
@@ -315,18 +338,18 @@ namespace FB2Formatter
 					throw new Exception("Cannot write text in the current context.");
 
 				case TextFormatMode.Inline:
-					output.Append(text);
+					FormatBook_WriteInlineText(output, text, ref allowWhitespace);
 					break;
 
 				case TextFormatMode.Preformatted:
 					output.Append(text);
+					allowWhitespace = true;
 					break;
 			}
 		}
 
-		private static void FormatBook_WriteInlineText(StringBuilder output, string text)
+		private static void FormatBook_WriteInlineText(StringBuilder output, string text, ref bool allowWhitespace)
 		{
-			bool allowWhitespace = true;
 			foreach (char chr in text)
 			{
 				UnicodeCategory charCategory = char.GetUnicodeCategory(chr);
@@ -356,6 +379,16 @@ namespace FB2Formatter
 			}
 		}
 
+		private static void FormatBook_WriteBinary(StringBuilder output, string content, int level)
+		{
+			byte[] binaryContent = Convert.FromBase64String(content);
+			foreach (string chunk in SplitStringBy(Convert.ToBase64String(binaryContent), 72))
+			{
+				output.AppendLine();
+				output.Append(new string(indentSymbol, indentLength * level));
+				output.Append(chunk);
+			}
+		}
 
 
 		public static void FormatBookPictures(string sourceFile, string targetFile)
