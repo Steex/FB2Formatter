@@ -249,8 +249,17 @@ namespace FB2Formatter
 								break;
 
 							case XmlNodeType.EndElement:
-								FormatBook_WriteElementClosingTag(output, reader.Name, nodeStack.FormatMode, nodeStack.NodeLevel);
+								TextFormatMode insideFormatMode = nodeStack.FormatMode;
 								nodeStack.DeleteNode(reader.Name);
+								TextFormatMode outsideFormatMode = nodeStack.FormatMode;
+
+								if (insideFormatMode == TextFormatMode.Inline &&
+									outsideFormatMode == TextFormatMode.Structured)
+								{
+									FormatBook_DeleteTrailingWhitespace(output);
+								}
+
+								FormatBook_WriteElementClosingTag(output, reader.Name, insideFormatMode, nodeStack.NodeLevel + 1);
 								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
 								binaryElement = false;
 								break;
@@ -387,6 +396,14 @@ namespace FB2Formatter
 				output.AppendLine();
 				output.Append(new string(indentSymbol, indentLength * level));
 				output.Append(chunk);
+			}
+		}
+
+		private static void FormatBook_DeleteTrailingWhitespace(StringBuilder output)
+		{
+			if (output.Length > 0 && output[output.Length - 1] == ' ')
+			{
+				output.Length -= 1;
 			}
 		}
 
