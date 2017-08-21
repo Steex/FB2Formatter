@@ -50,6 +50,8 @@
   <ItemGroup>
     <Compile Include="BookAttachment.cs" />
     <Compile Include="BookUtils.cs" />
+    <Compile Include="BookFormatter.cs" />
+    <Compile Include="Utils.cs" />
     <Compile Include="Droplet.cs">
       <SubType>UserControl</SubType>
     </Compile>
