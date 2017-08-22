@@ -6,6 +6,7 @@ using System.Xml;
 using System.IO;
 using System.Web;
 using System.Globalization;
+using System.Windows.Forms;
 
 
 namespace FB2Formatter
@@ -144,10 +145,45 @@ namespace FB2Formatter
 			}
 		}
 
+		private class EncodingData
+		{
+			private HashSet<char> validChars;
+
+			public Encoding Encoding { get; private set; }
+			public bool Enforced { get; set; }
+
+			public EncodingData(Encoding encoding)
+			{
+				Encoding = encoding;
+
+				if (encoding.IsSingleByte)
+				{
+					validChars = new HashSet<char>();
+					byte[] charCodes = Enumerable.Range(1, 255).Select(n=>(byte)n).ToArray();
+					foreach (char chr in encoding.GetChars(charCodes))
+					{
+						validChars.Add(chr);
+					}
+				}
+			}
+
+			public bool CanRepresentChar(char chr)
+			{
+				return validChars == null || validChars.Contains(chr);
+			}
+		}
+
 
 		private static readonly char indentSymbol = ' ';
 		private static readonly int indentLength = 1;
 		private static readonly int binaryLineSize = 80;
+
+		private static readonly string msgEncodingInsufficient =
+			"The book contains symbols which cannot be represent with the source encoding." + Environment.NewLine +
+			"Encoding will be changed to UTF-8." + Environment.NewLine +
+			"Select \"No\" to escape such symbols instead.";
+
+		private EncodingData targetEncoding;
 
 
 		public BookFormatter()
@@ -157,10 +193,11 @@ namespace FB2Formatter
 		public void FormatBook(string sourceFile, string targetFile)
 		{
 			BookNodeStack nodeStack = new BookNodeStack(TextFormatMode.Structured);
-			Encoding encoding = Encoding.UTF8;
 			StringBuilder output = new StringBuilder();
 			bool allowWhitespace = false;
 			bool binaryElement = false;
+
+			targetEncoding = new EncodingData(Encoding.UTF8);
 
 			using (XmlTextReader reader = new XmlTextReader(sourceFile))
 			{
@@ -170,7 +207,7 @@ namespace FB2Formatter
 					switch (reader.NodeType)
 					{
 						case XmlNodeType.XmlDeclaration:
-							encoding = Encoding.GetEncoding(reader["encoding"]);
+							targetEncoding = new EncodingData(Encoding.GetEncoding(reader["encoding"]));
 							WriteDeclaration(output, reader.Value);
 							break;
 
@@ -239,7 +276,7 @@ namespace FB2Formatter
 			}
 
 			//
-			File.WriteAllText(targetFile + ".txt", output.ToString(), encoding);
+			File.WriteAllText(targetFile + ".txt", output.ToString(), targetEncoding.Encoding);
 		}
 
 
@@ -284,7 +321,12 @@ namespace FB2Formatter
 		{
 			while (reader.MoveToNextAttribute())
 			{
-				output.AppendFormat(" {0}=\"{1}\"", reader.Name, HttpUtility.HtmlEncode(reader.Value));
+				output.Append(' ');
+				output.Append(reader.Name);
+				output.Append('=');
+				output.Append('"');
+				WriteXmlString(output, reader.Value, true);
+				output.Append('"');
 			}
 		}
 
@@ -300,7 +342,7 @@ namespace FB2Formatter
 					break;
 
 				case TextFormatMode.Preformatted:
-					output.Append(text);
+					WriteXmlString(output, text, false);
 					allowWhitespace = true;
 					break;
 			}
@@ -326,7 +368,7 @@ namespace FB2Formatter
 
 				if (!isWhitespace)
 				{
-					output.Append(chr);
+					WriteXmlChar(output, chr, false);
 					allowWhitespace = true;
 				}
 				else if (allowWhitespace)
@@ -356,5 +398,56 @@ namespace FB2Formatter
 			}
 		}
 
+
+		private void WriteXmlString(StringBuilder output, string str, bool escapeQuotes)
+		{
+			foreach (char chr in str)
+			{
+				WriteXmlChar(output, chr, escapeQuotes);
+			}
+		}
+
+		private void WriteXmlChar(StringBuilder output, char chr, bool escapeQuotes)
+		{
+			switch (chr)
+			{
+				case '\'':
+					output.Append('\''); // NOTE: do not escape single quotes
+					break;
+				case '"':
+					output.Append(escapeQuotes ? "&qout;" : "\"");
+					break;
+				case '&':
+					output.Append("&amp;");
+					break;
+				case '<':
+					output.Append("&lt;");
+					break;
+				case '>':
+					output.Append("&gt;");
+					break;
+				default:
+					if (targetEncoding.CanRepresentChar(chr))
+					{
+						output.Append(chr);
+					}
+					else if (targetEncoding.Enforced)
+					{
+						output.AppendFormat("&#{0};", (int)chr);
+					}
+					else if (MessageBox.Show(msgEncodingInsufficient, "FBF", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+					{
+						targetEncoding.Enforced = true;
+						output.AppendFormat("&#{0};", (int)chr);
+					}
+					else
+					{
+						targetEncoding = new EncodingData(Encoding.UTF8);
+						targetEncoding.Enforced = true;
+						output.Append(chr);
+					}
+					break;
+			}
+		}
 	}
 }
