@@ -67,8 +67,8 @@ namespace FB2Formatter
 		{
 			try
 			{
-				BookFormatter formatter = new BookFormatter();
-				formatter.FormatBook(sourceFile, targetFile);
+				BookFormatter formatter = new BookFormatter(sourceFile, targetFile);
+				formatter.FormatBook();
 			}
 			catch (Exception ex)
 			{

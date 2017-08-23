@@ -179,19 +179,26 @@ namespace FB2Formatter
 		private static readonly int binaryLineSize = 80;
 
 		private static readonly string msgEncodingInsufficient =
-			"The book contains symbols which cannot be represent with the source encoding." + Environment.NewLine +
+			"\"{0}\"" + Environment.NewLine +
+			Environment.NewLine +
+			"The book contains symbols which cannot be represent with the source encoding \"{1}\"." + Environment.NewLine +
 			"Encoding will be changed to UTF-8." + Environment.NewLine +
 			"Select \"No\" to escape such symbols instead.";
+
+		private string sourceFileName;
+		private string targetFileName;
 
 		private string sourceEncodingName;
 		private EncodingData targetEncoding;
 
 
-		public BookFormatter()
+		public BookFormatter(string sourceFile, string targetFile)
 		{
+			sourceFileName = sourceFile;
+			targetFileName = targetFile;
 		}
 
-		public void FormatBook(string sourceFile, string targetFile)
+		public void FormatBook()
 		{
 			BookNodeStack nodeStack = new BookNodeStack(TextFormatMode.Structured);
 			StringBuilder output = new StringBuilder();
@@ -202,7 +209,7 @@ namespace FB2Formatter
 			targetEncoding = new EncodingData(Encoding.UTF8);
 
 			// Read the source book and write formatted content into a buffer.
-			using (XmlTextReader reader = new XmlTextReader(sourceFile))
+			using (XmlTextReader reader = new XmlTextReader(sourceFileName))
 			{
 				while (reader.Read())
 				{
@@ -278,7 +285,7 @@ namespace FB2Formatter
 			}
 
 			// Write the converted book content into a file.
-			using (StreamWriter targetWriter = new StreamWriter(targetFile, false, targetEncoding.Encoding))
+			using (StreamWriter targetWriter = new StreamWriter(targetFileName, false, targetEncoding.Encoding))
 			{
 				// Determine the output encoding name. If the source encoding is not changed,
 				// write the encoding exactly as it was taken from the source file.
@@ -299,8 +306,6 @@ namespace FB2Formatter
 				// Write the book content.
 				targetWriter.Write(output.ToString());
 			}
-
-			//File.AppendAllText(targetFile + ".txt", output.ToString(), targetEncoding.Encoding);
 		}
 
 
@@ -454,7 +459,8 @@ namespace FB2Formatter
 					{
 						output.AppendFormat("&#{0};", (int)chr);
 					}
-					else if (MessageBox.Show(msgEncodingInsufficient, "FBF", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+					else if (MessageBox.Show(string.Format(msgEncodingInsufficient, sourceFileName, sourceEncodingName), 
+						"FBF", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
 					{
 						targetEncoding.Enforced = true;
 						output.AppendFormat("&#{0};", (int)chr);
