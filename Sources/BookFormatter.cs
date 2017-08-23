@@ -183,6 +183,7 @@ namespace FB2Formatter
 			"Encoding will be changed to UTF-8." + Environment.NewLine +
 			"Select \"No\" to escape such symbols instead.";
 
+		private string sourceEncodingName;
 		private EncodingData targetEncoding;
 
 
@@ -197,18 +198,19 @@ namespace FB2Formatter
 			bool allowWhitespace = false;
 			bool binaryElement = false;
 
+			sourceEncodingName = null;
 			targetEncoding = new EncodingData(Encoding.UTF8);
 
+			// Read the source book and write formatted content into a buffer.
 			using (XmlTextReader reader = new XmlTextReader(sourceFile))
 			{
 				while (reader.Read())
 				{
-					//output.AppendLine(String.Format("{}", ))
 					switch (reader.NodeType)
 					{
 						case XmlNodeType.XmlDeclaration:
-							targetEncoding = new EncodingData(Encoding.GetEncoding(reader["encoding"]));
-							WriteDeclaration(output, reader.Value);
+							sourceEncodingName = reader["encoding"];
+							targetEncoding = new EncodingData(Encoding.GetEncoding(sourceEncodingName));
 							break;
 
 						case XmlNodeType.Element:
@@ -275,15 +277,32 @@ namespace FB2Formatter
 				}
 			}
 
-			//
-			File.WriteAllText(targetFile + ".txt", output.ToString(), targetEncoding.Encoding);
+			// Write the converted book content into a file.
+			using (StreamWriter targetWriter = new StreamWriter(targetFile, false, targetEncoding.Encoding))
+			{
+				// Determine the output encoding name. If the source encoding is not changed,
+				// write the encoding exactly as it was taken from the source file.
+				string encodingName;
+				if (!string.IsNullOrWhiteSpace(sourceEncodingName) &&
+					targetEncoding.Encoding == Encoding.GetEncoding(sourceEncodingName))
+				{
+					encodingName = sourceEncodingName;
+				}
+				else
+				{
+					encodingName = targetEncoding.Encoding.WebName;
+				}
+
+				// Write the file header.
+				targetWriter.Write(string.Format("<?xml version=\"1.0\" encoding=\"{0}\"?>", encodingName));
+
+				// Write the book content.
+				targetWriter.Write(output.ToString());
+			}
+
+			//File.AppendAllText(targetFile + ".txt", output.ToString(), targetEncoding.Encoding);
 		}
 
-
-		private void WriteDeclaration(StringBuilder output, string content)
-		{
-			output.AppendFormat("<?xml {0}?>", content);
-		}
 
 		private void WriteElementOpeningTag(StringBuilder output, string name, TextFormatMode formatMode, int level)
 		{
