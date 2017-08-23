@@ -378,16 +378,18 @@ namespace FB2Formatter
 			{
 				UnicodeCategory charCategory = char.GetUnicodeCategory(chr);
 
-				// Skip control symbols
-				if (charCategory == UnicodeCategory.Control)
+				// Skip control symbols (except tab character, which will be replaced with the whitespace).
+				if (chr != '\t' &&
+					charCategory == UnicodeCategory.Control)
 				{
 					continue;
 				}
 
 				// Replace all simple whitespaces and line separators with single whitespace.
 				// Other symbols (including special whitespaces) are written as is.
-				bool isWhitespace = 
+				bool isWhitespace =
 					chr == ' ' ||
+					chr == '\t' ||
 					charCategory == UnicodeCategory.LineSeparator;
 
 				if (!isWhitespace)
