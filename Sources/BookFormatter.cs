@@ -190,23 +190,30 @@ namespace FB2Formatter
 
 		private string sourceEncodingName;
 		private EncodingData targetEncoding;
+		private StringBuilder output;
 
 
 		public BookFormatter(string sourceFile, string targetFile)
 		{
 			sourceFileName = sourceFile;
 			targetFileName = targetFile;
+
+			sourceEncodingName = null;
+			targetEncoding = new EncodingData(Encoding.UTF8);
+			output = new StringBuilder();
 		}
 
 		public void FormatBook()
 		{
+			ProcessSourceBook();
+			WriteTargetBook();
+		}
+
+		private void ProcessSourceBook()
+		{
 			BookNodeStack nodeStack = new BookNodeStack(TextFormatMode.Structured);
-			StringBuilder output = new StringBuilder();
 			bool allowWhitespace = false;
 			bool binaryElement = false;
-
-			sourceEncodingName = null;
-			targetEncoding = new EncodingData(Encoding.UTF8);
 
 			// Read the source book and write formatted content into a buffer.
 			using (XmlTextReader reader = new XmlTextReader(sourceFileName))
@@ -224,16 +231,16 @@ namespace FB2Formatter
 							string elementName = reader.Name;
 							bool elementEmpty = reader.IsEmptyElement;
 
-							WriteElementOpeningTag(output, elementName, nodeStack.FormatMode, nodeStack.NodeLevel + 1);
-							WriteElementAttributes(output, reader);
+							WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.NodeLevel + 1);
+							WriteElementAttributes(reader);
 
 							if (elementEmpty)
 							{
-								WriteEmptyElementCloser(output);
+								WriteEmptyElementCloser();
 							}
 							else
 							{
-								WriteElementCloser(output);
+								WriteElementCloser();
 							}
 
 							allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
@@ -254,10 +261,10 @@ namespace FB2Formatter
 							if (insideFormatMode == TextFormatMode.Inline &&
 								outsideFormatMode == TextFormatMode.Structured)
 							{
-								DeleteTrailingWhitespace(output);
+								DeleteTrailingWhitespace();
 							}
 
-							WriteElementClosingTag(output, reader.Name, insideFormatMode, nodeStack.NodeLevel + 1);
+							WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.NodeLevel + 1);
 							allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
 							binaryElement = false;
 							break;
@@ -266,24 +273,27 @@ namespace FB2Formatter
 						case XmlNodeType.SignificantWhitespace:
 							if (nodeStack.FormatMode != TextFormatMode.Structured)
 							{
-								WriteText(output, reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+								WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
 							}
 							break;
 
 						case XmlNodeType.Text:
 							if (binaryElement)
 							{
-								WriteBinary(output, reader.Value, nodeStack.NodeLevel + 1);
+								WriteBinary(reader.Value, nodeStack.NodeLevel + 1);
 							}
 							else
 							{
-								WriteText(output, reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+								WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
 							}
 							break;
 					}
 				}
 			}
+		}
 
+		private void WriteTargetBook()
+		{
 			// Write the converted book content into a file.
 			using (StreamWriter targetWriter = new StreamWriter(targetFileName, false, targetEncoding.Encoding))
 			{
@@ -309,7 +319,7 @@ namespace FB2Formatter
 		}
 
 
-		private void WriteElementOpeningTag(StringBuilder output, string name, TextFormatMode formatMode, int level)
+		private void WriteElementOpeningTag(string name, TextFormatMode formatMode, int level)
 		{
 			if (formatMode == TextFormatMode.Structured)
 			{
@@ -320,7 +330,7 @@ namespace FB2Formatter
 			output.AppendFormat("<{0}", name);
 		}
 
-		private void WriteElementClosingTag(StringBuilder output, string name, TextFormatMode formatMode, int level)
+		private void WriteElementClosingTag(string name, TextFormatMode formatMode, int level)
 		{
 			if (formatMode == TextFormatMode.Structured)
 			{
@@ -331,17 +341,17 @@ namespace FB2Formatter
 			output.AppendFormat("</{0}>", name);
 		}
 
-		private void WriteEmptyElementCloser(StringBuilder output)
+		private void WriteEmptyElementCloser()
 		{
 			output.Append("/>");
 		}
 
-		private void WriteElementCloser(StringBuilder output)
+		private void WriteElementCloser()
 		{
 			output.Append(">");
 		}
 
-		private void WriteElementAttributes(StringBuilder output, XmlTextReader reader)
+		private void WriteElementAttributes(XmlTextReader reader)
 		{
 			while (reader.MoveToNextAttribute())
 			{
@@ -349,12 +359,12 @@ namespace FB2Formatter
 				output.Append(reader.Name);
 				output.Append('=');
 				output.Append('"');
-				WriteXmlString(output, reader.Value, true);
+				WriteXmlString(reader.Value, true);
 				output.Append('"');
 			}
 		}
 
-		private void WriteText(StringBuilder output, string text, TextFormatMode formatMode, ref bool allowWhitespace)
+		private void WriteText(string text, TextFormatMode formatMode, ref bool allowWhitespace)
 		{
 			switch (formatMode)
 			{
@@ -362,17 +372,17 @@ namespace FB2Formatter
 					throw new Exception("Cannot write text in the current context.");
 
 				case TextFormatMode.Inline:
-					WriteInlineText(output, text, ref allowWhitespace);
+					WriteInlineText(text, ref allowWhitespace);
 					break;
 
 				case TextFormatMode.Preformatted:
-					WriteXmlString(output, text, false);
+					WriteXmlString(text, false);
 					allowWhitespace = true;
 					break;
 			}
 		}
 
-		private void WriteInlineText(StringBuilder output, string text, ref bool allowWhitespace)
+		private void WriteInlineText(string text, ref bool allowWhitespace)
 		{
 			foreach (char chr in text)
 			{
@@ -394,7 +404,7 @@ namespace FB2Formatter
 
 				if (!isWhitespace)
 				{
-					WriteXmlChar(output, chr, false);
+					WriteXmlChar(chr, false);
 					allowWhitespace = true;
 				}
 				else if (allowWhitespace)
@@ -405,7 +415,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private void WriteBinary(StringBuilder output, string content, int level)
+		private void WriteBinary(string content, int level)
 		{
 			byte[] binaryContent = Convert.FromBase64String(content);
 			foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(binaryContent), binaryLineSize))
@@ -416,7 +426,7 @@ namespace FB2Formatter
 			}
 		}
 
-		private void DeleteTrailingWhitespace(StringBuilder output)
+		private void DeleteTrailingWhitespace()
 		{
 			if (output.Length > 0 && output[output.Length - 1] == ' ')
 			{
@@ -425,15 +435,15 @@ namespace FB2Formatter
 		}
 
 
-		private void WriteXmlString(StringBuilder output, string str, bool escapeQuotes)
+		private void WriteXmlString(string str, bool escapeQuotes)
 		{
 			foreach (char chr in str)
 			{
-				WriteXmlChar(output, chr, escapeQuotes);
+				WriteXmlChar(chr, escapeQuotes);
 			}
 		}
 
-		private void WriteXmlChar(StringBuilder output, char chr, bool escapeQuotes)
+		private void WriteXmlChar(char chr, bool escapeQuotes)
 		{
 			switch (chr)
 			{
