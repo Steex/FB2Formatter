@@ -239,7 +239,11 @@ namespace FB2Formatter
 								bool elementEmpty = reader.IsEmptyElement;
 
 								WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.Count);
-								WriteElementAttributes(reader);
+
+								while (reader.MoveToNextAttribute())
+								{
+									WriteElementAttribute(reader.Name, reader.Value);
+								}
 
 								if (elementEmpty)
 								{
@@ -369,17 +373,14 @@ namespace FB2Formatter
 			output.Append(">");
 		}
 
-		private void WriteElementAttributes(XmlTextReader reader)
+		private void WriteElementAttribute(string name, string value)
 		{
-			while (reader.MoveToNextAttribute())
-			{
-				output.Append(' ');
-				output.Append(reader.Name);
-				output.Append('=');
-				output.Append('"');
-				WriteXmlString(reader.Value, true);
-				output.Append('"');
-			}
+			output.Append(' ');
+			output.Append(name);
+			output.Append('=');
+			output.Append('"');
+			WriteXmlString(value, true);
+			output.Append('"');
 		}
 
 		private void WriteText(string text, TextFormatMode formatMode, ref bool allowWhitespace)
