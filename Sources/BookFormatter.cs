@@ -43,7 +43,7 @@ namespace FB2Formatter
 			private static readonly HashSet<String> inlineTextTags = new HashSet<String> {
 				/*formatted text*/ "p", "v", "subtitle", "text-author", "th", "td",
 				/*author*/         "first-name", "middle-name", "last-name", "nickname", "home-page", "email",
-				/*title-info*/     "genre", "id", "book-title", "lang", "keywords", "date",
+				/*title-info*/     "genre", "id", "book-title", "lang", "src-lang", "keywords", "date",
 				/*document-info*/  "src-url", "src-ocr", "version", "program-used",
 				/*publish-info*/   "book-name", "publisher", "city", "year", "isbn",
 				/*custom-info*/    "custom-info"
@@ -54,11 +54,11 @@ namespace FB2Formatter
 			private TextFormatMode defaultFormatMode;
 			private Stack<BookNodeInfo> items;
 
-			public int NodeLevel
+			public int Count
 			{
 				get
 				{
-					return items.Count - 1;
+					return items.Count;
 				}
 			}
 
@@ -231,7 +231,7 @@ namespace FB2Formatter
 							string elementName = reader.Name;
 							bool elementEmpty = reader.IsEmptyElement;
 
-							WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.NodeLevel + 1);
+							WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.Count);
 							WriteElementAttributes(reader);
 
 							if (elementEmpty)
@@ -264,7 +264,7 @@ namespace FB2Formatter
 								DeleteTrailingWhitespace();
 							}
 
-							WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.NodeLevel + 1);
+							WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.Count);
 							allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
 							binaryElement = false;
 							break;
@@ -280,12 +280,17 @@ namespace FB2Formatter
 						case XmlNodeType.Text:
 							if (binaryElement)
 							{
-								WriteBinary(reader.Value, nodeStack.NodeLevel + 1);
+								WriteBinary(reader.Value, nodeStack.Count);
 							}
 							else
 							{
 								WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
 							}
+							break;
+
+						case XmlNodeType.Comment:
+							WriteComment(reader.Value, nodeStack.FormatMode, nodeStack.Count);
+							allowWhitespace = true;
 							break;
 					}
 				}
@@ -324,7 +329,7 @@ namespace FB2Formatter
 			if (formatMode == TextFormatMode.Structured)
 			{
 				output.AppendLine();
-				output.Append(new string(indentSymbol, indentLength * level));
+				WriteLineIndent(level);
 			}
 
 			output.AppendFormat("<{0}", name);
@@ -335,7 +340,7 @@ namespace FB2Formatter
 			if (formatMode == TextFormatMode.Structured)
 			{
 				output.AppendLine();
-				output.Append(new string(indentSymbol, indentLength * level));
+				WriteLineIndent(level);
 			}
 
 			output.AppendFormat("</{0}>", name);
@@ -421,7 +426,7 @@ namespace FB2Formatter
 			foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(binaryContent), binaryLineSize))
 			{
 				output.AppendLine();
-				output.Append(new string(indentSymbol, indentLength * level));
+				WriteLineIndent(level);
 				output.Append(chunk);
 			}
 		}
@@ -432,6 +437,19 @@ namespace FB2Formatter
 			{
 				output.Length -= 1;
 			}
+		}
+
+		private void WriteComment(string content, TextFormatMode formatMode, int level)
+		{
+			if (formatMode == TextFormatMode.Structured)
+			{
+				output.AppendLine();
+				WriteLineIndent(level);
+			}
+
+			output.Append("<!--");
+			output.Append(content);
+			output.Append("-->");
 		}
 
 
@@ -485,6 +503,11 @@ namespace FB2Formatter
 					}
 					break;
 			}
+		}
+
+		private void WriteLineIndent(int level)
+		{
+			output.Append(new string(indentSymbol, indentLength * level));
 		}
 	}
 }
