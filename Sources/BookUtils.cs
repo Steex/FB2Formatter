@@ -6,6 +6,7 @@ using System.Xml;
 using System.IO;
 using System.Web;
 using System.Globalization;
+using System.Windows.Forms;
 
 
 namespace FB2Formatter
@@ -72,6 +73,7 @@ namespace FB2Formatter
 			}
 			catch (Exception ex)
 			{
+				MessageBox.Show(ex.Message, "FBF", MessageBoxButtons.OK, MessageBoxIcon.Error);
 			}
 		}
 

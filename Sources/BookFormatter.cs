@@ -185,6 +185,11 @@ namespace FB2Formatter
 			"Encoding will be changed to UTF-8." + Environment.NewLine +
 			"Select \"No\" to escape such symbols instead.";
 
+		private static readonly string errXmlParseError =
+			"\"{0}\"" + Environment.NewLine +
+			"XML error at line {1}, char {2}:" + Environment.NewLine +
+			"{3}";
+
 		private string sourceFileName;
 		private string targetFileName;
 
@@ -218,81 +223,89 @@ namespace FB2Formatter
 			// Read the source book and write formatted content into a buffer.
 			using (XmlTextReader reader = new XmlTextReader(sourceFileName))
 			{
-				while (reader.Read())
+				try
 				{
-					switch (reader.NodeType)
+					while (reader.Read())
 					{
-						case XmlNodeType.XmlDeclaration:
-							sourceEncodingName = reader["encoding"];
-							targetEncoding = new EncodingData(Encoding.GetEncoding(sourceEncodingName));
-							break;
+						switch (reader.NodeType)
+						{
+							case XmlNodeType.XmlDeclaration:
+								sourceEncodingName = reader["encoding"];
+								targetEncoding = new EncodingData(Encoding.GetEncoding(sourceEncodingName));
+								break;
 
-						case XmlNodeType.Element:
-							string elementName = reader.Name;
-							bool elementEmpty = reader.IsEmptyElement;
+							case XmlNodeType.Element:
+								string elementName = reader.Name;
+								bool elementEmpty = reader.IsEmptyElement;
 
-							WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.Count);
-							WriteElementAttributes(reader);
+								WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.Count);
+								WriteElementAttributes(reader);
 
-							if (elementEmpty)
-							{
-								WriteEmptyElementCloser();
-							}
-							else
-							{
-								WriteElementCloser();
-							}
+								if (elementEmpty)
+								{
+									WriteEmptyElementCloser();
+								}
+								else
+								{
+									WriteElementCloser();
+								}
 
-							allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
+								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
 
-							if (!elementEmpty)
-							{
-								nodeStack.AddNode(elementName);
-							}
+								if (!elementEmpty)
+								{
+									nodeStack.AddNode(elementName);
+								}
 
-							binaryElement = (elementName == "binary" && !elementEmpty);
-							break;
+								binaryElement = (elementName == "binary" && !elementEmpty);
+								break;
 
-						case XmlNodeType.EndElement:
-							TextFormatMode insideFormatMode = nodeStack.FormatMode;
-							nodeStack.DeleteNode(reader.Name);
-							TextFormatMode outsideFormatMode = nodeStack.FormatMode;
+							case XmlNodeType.EndElement:
+								TextFormatMode insideFormatMode = nodeStack.FormatMode;
+								nodeStack.DeleteNode(reader.Name);
+								TextFormatMode outsideFormatMode = nodeStack.FormatMode;
 
-							if (insideFormatMode == TextFormatMode.Inline &&
-								outsideFormatMode == TextFormatMode.Structured)
-							{
-								DeleteTrailingWhitespace();
-							}
+								if (insideFormatMode == TextFormatMode.Inline &&
+									outsideFormatMode == TextFormatMode.Structured)
+								{
+									DeleteTrailingWhitespace();
+								}
 
-							WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.Count);
-							allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
-							binaryElement = false;
-							break;
+								WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.Count);
+								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
+								binaryElement = false;
+								break;
 
-						case XmlNodeType.Whitespace:
-						case XmlNodeType.SignificantWhitespace:
-							if (nodeStack.FormatMode != TextFormatMode.Structured)
-							{
-								WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
-							}
-							break;
+							case XmlNodeType.Whitespace:
+							case XmlNodeType.SignificantWhitespace:
+								if (nodeStack.FormatMode != TextFormatMode.Structured)
+								{
+									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+								}
+								break;
 
-						case XmlNodeType.Text:
-							if (binaryElement)
-							{
-								WriteBinary(reader.Value, nodeStack.Count);
-							}
-							else
-							{
-								WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
-							}
-							break;
+							case XmlNodeType.Text:
+								if (binaryElement)
+								{
+									WriteBinary(reader.Value, nodeStack.Count);
+								}
+								else
+								{
+									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+								}
+								break;
 
-						case XmlNodeType.Comment:
-							WriteComment(reader.Value, nodeStack.FormatMode, nodeStack.Count);
-							allowWhitespace = true;
-							break;
+							case XmlNodeType.Comment:
+								WriteComment(reader.Value, nodeStack.FormatMode, nodeStack.Count);
+								allowWhitespace = true;
+								break;
+						}
 					}
+				}
+				catch (Exception ex)
+				{
+					string message = string.Format(errXmlParseError, sourceFileName, reader.LineNumber, reader.LinePosition, ex.Message);
+					throw new Exception(message, ex);
 				}
 			}
 		}
@@ -374,7 +387,7 @@ namespace FB2Formatter
 			switch (formatMode)
 			{
 				case TextFormatMode.Structured:
-					throw new Exception("Cannot write text in the current context.");
+					throw new Exception("Unexpected text in the current context.");
 
 				case TextFormatMode.Inline:
 					WriteInlineText(text, ref allowWhitespace);
