@@ -7,6 +7,7 @@ using System.IO;
 using System.Web;
 using System.Globalization;
 using System.Windows.Forms;
+using System.Text.RegularExpressions;
 
 
 namespace FB2Formatter
@@ -70,6 +71,29 @@ namespace FB2Formatter
 			{
 				BookFormatter formatter = new BookFormatter(sourceFile, targetFile);
 				formatter.FormatBook();
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message, "FBF", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		public static void FormatReferences(string sourceFile, string targetFile)
+		{
+			try
+			{
+				string content = File.ReadAllText(sourceFile);
+
+				int noteIndex = 1;
+				Regex anchorRegex = new Regex(@"\<a l\:href=""#n_[a-z0-9]+"" type=""note""\>\[[a-z0-9]+\]\</a\>");
+				string anchorResult = anchorRegex.Replace(content, s => string.Format(@"<a l:href=""#n_{0}"" type=""note"">[{0}]</a>", noteIndex++));
+
+				noteIndex = 1;
+				Regex targetRegex = new Regex(@"\<section id=""n_[a-z0-9]+""\>(\s*)\<title\>(\s*)\<p\>[a-z0-9]+\</p\>");
+				string targetResult = targetRegex.Replace(anchorResult, m =>
+					string.Format(@"<section id=""n_{0}"">{1}<title>{2}<p>{0}</p>", noteIndex++, m.Groups[1].Value, m.Groups[2].Value));
+
+				File.WriteAllText(targetFile, targetResult, Encoding.UTF8);
 			}
 			catch (Exception ex)
 			{
