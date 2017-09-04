@@ -403,20 +403,24 @@ namespace FB2Formatter
 			{
 				UnicodeCategory charCategory = char.GetUnicodeCategory(chr);
 
+				// Replace all simple whitespaces, tab symbols, and line/paragraph separators with single whitespace.
+				// Other symbols (including special whitespaces) are written as is.
+				bool isWhitespace =
+					chr == ' ' ||
+					chr == '\t' ||
+					chr == '\r' ||
+					chr == '\n' ||
+					charCategory == UnicodeCategory.LineSeparator ||
+					charCategory == UnicodeCategory.ParagraphSeparator;
+
 				// Skip control symbols (except tab character, which will be replaced with the whitespace).
-				if (chr != '\t' &&
+				if (!isWhitespace &&
 					charCategory == UnicodeCategory.Control)
 				{
 					continue;
 				}
 
-				// Replace all simple whitespaces and line separators with single whitespace.
-				// Other symbols (including special whitespaces) are written as is.
-				bool isWhitespace =
-					chr == ' ' ||
-					chr == '\t' ||
-					charCategory == UnicodeCategory.LineSeparator;
-
+				// Write the resolved symbol.
 				if (!isWhitespace)
 				{
 					WriteXmlChar(chr, false);
