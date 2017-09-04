@@ -187,7 +187,7 @@ namespace FB2Formatter
 
 					// Write binary element
 					writer.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", binary.Format, binary.Name);
-					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(binary.Content), 80))
+					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(binary.Content), Config.Main.BinaryLineSize))
 					{
 						writer.WriteLine("  " + chunk);
 					}
@@ -242,7 +242,7 @@ namespace FB2Formatter
 				{
 					wr.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", picture.Format, picture.Name);
 
-					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(picture.Content), 80))
+					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(picture.Content), Config.Main.BinaryLineSize))
 					{
 						wr.WriteLine("  " + chunk);
 					}
@@ -260,7 +260,7 @@ namespace FB2Formatter
 				{
 					wr.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", picture.Format, picture.Name);
 
-					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(picture.Content), 80))
+					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(picture.Content), Config.Main.BinaryLineSize))
 					{
 						wr.WriteLine("  " + chunk);
 					}
@@ -280,7 +280,7 @@ namespace FB2Formatter
 
 					wr.WriteLine(" <binary id=\"{1}\" content-type=\"{0}\">", picture.Format, picture.Name);
 
-					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(picture.Content), 80))
+					foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(picture.Content), Config.Main.BinaryLineSize))
 					{
 						wr.WriteLine("  " + chunk);
 					}

@@ -174,10 +174,6 @@ namespace FB2Formatter
 		}
 
 
-		private static readonly char indentSymbol = ' ';
-		private static readonly int indentLength = 1;
-		private static readonly int binaryLineSize = 80;
-
 		private static readonly string msgEncodingInsufficient =
 			"\"{0}\"" + Environment.NewLine +
 			Environment.NewLine +
@@ -437,7 +433,7 @@ namespace FB2Formatter
 		private void WriteBinary(string content, int level)
 		{
 			byte[] binaryContent = Convert.FromBase64String(content);
-			foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(binaryContent), binaryLineSize))
+			foreach (string chunk in Utils.SplitStringBy(Convert.ToBase64String(binaryContent), Config.Main.BinaryLineSize))
 			{
 				output.AppendLine();
 				WriteLineIndent(level);
@@ -521,7 +517,7 @@ namespace FB2Formatter
 
 		private void WriteLineIndent(int level)
 		{
-			output.Append(new string(indentSymbol, indentLength * level));
+			output.Append(new string(Config.Main.IndentChar, Config.Main.IndentLength * level));
 		}
 	}
 }

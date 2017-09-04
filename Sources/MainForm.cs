@@ -20,6 +20,22 @@ namespace FB2Formatter
 		}
 
 
+		protected override void OnLoad(EventArgs e)
+		{
+			base.OnLoad(e);
+
+			Config.Main.Load();
+		}
+
+
+		protected override void OnClosed(EventArgs e)
+		{
+			Config.Main.Save();
+
+			base.OnClosed(e);
+		}
+
+
 		private void droplet_DragEnter(object sender, DragEventArgs e)
 		{
 			e.Effect = e.Data.GetDataPresent("FileDrop") ? DragDropEffects.Link : DragDropEffects.None;
@@ -110,6 +126,17 @@ namespace FB2Formatter
 					BookUtils.ConvertListPicturesToXml(pictures, Path.Combine(Path.GetDirectoryName(pictures.First()), "images.txt"));
 				}
 			}
+		}
+
+		private void menuExit_Click(object sender, EventArgs e)
+		{
+			Close();
+		}
+
+		private void menuOptions_Click(object sender, EventArgs e)
+		{
+			SettingsForm settingsForm = new SettingsForm();
+			settingsForm.ShowDialog(this);
 		}
 
 	}
