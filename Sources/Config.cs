@@ -14,16 +14,6 @@ using Microsoft.Win32;
 
 namespace FB2Formatter
 {
-	public class RegistrySaveNameAttribute : Attribute
-	{
-		public string Name { get; private set; }
-
-		public RegistrySaveNameAttribute(string name)
-		{
-			Name = name;
-		}
-	}
-
 	public class Config
 	{
 		private static readonly string registryRootName = @"Software\SteexSoft\FB2Formatter";
@@ -126,29 +116,6 @@ namespace FB2Formatter
 			{
 			}
 		}
-
-
-		public void SaveReflection()
-		{
-			RegistryKey settingsRoot = Registry.CurrentUser.OpenSubKey(registryRootName);
-			if (settingsRoot != null)
-			{
-				foreach (var propertyInfo in GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
-				{
-					object[] attributes = propertyInfo.GetCustomAttributes(typeof(RegistrySaveNameAttribute), false);
-					if (attributes.Length > 0)
-					{
-						string registryName = ((RegistrySaveNameAttribute)attributes[0]).Name;
-						object value = propertyInfo.GetValue(this, null);
-						settingsRoot.SetValue(registryName, InvariantConverter.ToString(value));
-					}
-				}
-
-
-				// All done.
-				settingsRoot.Close();
-			}
-		}
-
+		
 	}
 }

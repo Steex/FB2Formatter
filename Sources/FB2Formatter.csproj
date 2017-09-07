@@ -53,7 +53,9 @@
     <Compile Include="BookUtils.cs" />
     <Compile Include="BookFormatter.cs" />
     <Compile Include="Config.cs" />
+    <Compile Include="RegistrySaverTest.cs" />
     <Compile Include="InvariantConverter.cs" />
+    <Compile Include="RegistrySaver.cs" />
     <Compile Include="SettingsForm.cs">
       <SubType>Form</SubType>
     </Compile>
