@@ -14,6 +14,17 @@ using Microsoft.Win32;
 
 namespace FB2Formatter
 {
+	public enum RegistryTree
+	{
+		ClassesRoot,
+		CurrentUser,
+		LocalMachine,
+		Users,
+		CurrentConfig,
+		PerformanceData,
+	}
+
+
 	public class RegistrySaveAttribute : Attribute
 	{
 		public string Name { get; private set; }
@@ -31,48 +42,128 @@ namespace FB2Formatter
 
 	public class RegistrySaver
 	{
-		public static void Load(object data, string registryRootName)
+		private static RegistryKey[] registryTrees = {
+			Registry.ClassesRoot,
+			Registry.CurrentUser,
+			Registry.LocalMachine,
+			Registry.Users,
+			Registry.CurrentConfig,
+			Registry.PerformanceData};
+
+
+		public static void Load(object data, string keyName)
 		{
-			RegistryKey settingsRoot = Registry.CurrentUser.OpenSubKey(registryRootName);
-			if (settingsRoot != null)
+			Load(data, RegistryTree.CurrentUser, keyName);
+		}
+
+		public static void Load(object data, RegistryTree tree, string keyName)
+		{
+			RegistryKey rootKey = registryTrees[(int)tree].OpenSubKey(keyName);
+			if (rootKey != null)
 			{
-				foreach (var propertyInfo in data.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+				Load(data, rootKey);
+				rootKey.Close();
+			}
+		}
+
+		public static void Save(object data, string keyName)
+		{
+			Save(data, RegistryTree.CurrentUser, keyName);
+		}
+
+		public static void Save(object data, RegistryTree tree, string keyName)
+		{
+			Save(data, registryTrees[(int)tree], keyName);
+		}
+
+
+		public static void Load(object data, RegistryKey key)
+		{
+			foreach (var propertyInfo in data.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
+			{
+				RegistrySaveAttribute valueAttr = GetAttribute<RegistrySaveAttribute>(propertyInfo);
+				if (valueAttr != null)
 				{
-					object[] attributes = propertyInfo.GetCustomAttributes(typeof(RegistrySaveAttribute), false);
-					if (attributes.Length > 0)
+					if (valueAttr.IsObject)
 					{
-						RegistrySaveAttribute attr = ((RegistrySaveAttribute)attributes[0]);
-						string registryValue = settingsRoot.GetValue(attr.Name) as string;
-						object value = registryValue != null ? InvariantConverter.FromString(registryValue, propertyInfo.PropertyType) : attr.DefaultValue;
+						RegistryKey subkey = key.OpenSubKey(valueAttr.Name);
+						if (subkey != null)
+						{
+							// Try to get an existing value of the property.
+							object value = propertyInfo.GetValue(data, null);
+
+							// In the property has no value, and the subkey exists, create a new value object.
+							if (value == null)
+							{
+								value = Activator.CreateInstance(propertyInfo.PropertyType);
+								propertyInfo.SetValue(data, value, null);
+							}
+
+							// Load the value members (no matter whether the value existed or has been created).
+							Load(value, subkey);
+
+							// Close the subkey.
+							subkey.Close();
+						}
+						else
+						{
+							// If there's no subkey, erase the object.
+							propertyInfo.SetValue(data, null, null);
+						}
+					}
+					else
+					{
+						// Load the simple value.
+						string strValue = key.GetValue(valueAttr.Name) as string;
+						object value = strValue != null ? InvariantConverter.FromString(strValue, propertyInfo.PropertyType) : valueAttr.DefaultValue;
 						propertyInfo.SetValue(data, value, null);
 					}
 				}
-
-				// All done.
-				settingsRoot.Close();
 			}
 		}
 
-		public static void Save(object data, string registryRootName)
+		private static void Save(object data, RegistryKey root, string keyName)
 		{
-			RegistryKey settingsRoot = Registry.CurrentUser.CreateSubKey(registryRootName);
-			if (settingsRoot != null)
+			RegistryKey currentKey = root.CreateSubKey(keyName);
+			if (currentKey != null)
 			{
 				foreach (var propertyInfo in data.GetType().GetProperties(BindingFlags.Instance | BindingFlags.Public))
 				{
-					object[] attributes = propertyInfo.GetCustomAttributes(typeof(RegistrySaveAttribute), false);
-					if (attributes.Length > 0)
+					RegistrySaveAttribute valueAttr = GetAttribute<RegistrySaveAttribute>(propertyInfo);
+					if (valueAttr != null)
 					{
-						RegistrySaveAttribute attr = ((RegistrySaveAttribute)attributes[0]);
 						object value = propertyInfo.GetValue(data, null);
-						settingsRoot.SetValue(attr.Name, InvariantConverter.ToString(value));
+
+						if (valueAttr.IsObject)
+						{
+							if (value == null)
+							{
+								root.DeleteSubKey(keyName + '\\' + valueAttr.Name);
+							}
+							else
+							{
+								Save(value, root, keyName + '\\' + valueAttr.Name);
+							}
+						}
+						else
+						{
+							currentKey.SetValue(valueAttr.Name, InvariantConverter.ToString(value));
+						}
+
+						//if (propertyInfo.PropertyType.GetInterface(IList.GetType().ToString()) != null)
 					}
 				}
 
 				// All done.
-				settingsRoot.Close();
+				currentKey.Close();
 			}
 		}
 
+
+		private static TAttr GetAttribute<TAttr>(PropertyInfo propertyInfo) where TAttr : Attribute
+		{
+			object[] attributes = propertyInfo.GetCustomAttributes(typeof(TAttr), false);
+			return attributes.Length > 0 ? (TAttr)attributes[0] : null;
+		}
 	}
 }

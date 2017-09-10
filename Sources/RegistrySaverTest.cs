@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using Microsoft.Win32;
 
 namespace FB2Formatter
 {
@@ -13,14 +14,28 @@ namespace FB2Formatter
 	}
 
 
-	public class TempObject
+	public class TempSubdata
 	{
-		public int n = 42;
+		[RegistrySave("Name", false, "")]
+		public string Name { get; set; }
+		[RegistrySave("Value", false, "")]
+		public string Value { get; set; }
+
+		public TempSubdata()
+		{
+		}
+
+		public TempSubdata(string name, string value)
+		{
+			Name = name;
+			Value = value;
+		}
 	}
 
 
 	public class TempData
 	{
+		public List<int> ListData { get; set; }
 		[RegistrySave("BoolData", false, false)]
 		public bool BoolData { get; set; }
 		[RegistrySave("IntData", false, 99)]
@@ -31,17 +46,18 @@ namespace FB2Formatter
 		public string StringData { get; set; }
 		[RegistrySave("EnumData", false, TempEnum.First)]
 		public TempEnum EnumData { get; set; }
-		//[RegistrySaveName("ObjectData")]
-		public TempObject ObjectData { get; set; }
+		[RegistrySave("ObjectData", true, null)]
+		public TempSubdata ObjectData { get; set; }
 
 		public TempData()
 		{
+			ListData = new List<int>();
 			BoolData = true;
 			IntData = 5;
 			FloatData = 3.1415f;
 			StringData = "simple sample";
 			EnumData = TempEnum.Second;
-			ObjectData = new TempObject();
+			ObjectData = new TempSubdata("my-name", "my-value");
 		}
 	}
 
@@ -58,9 +74,12 @@ namespace FB2Formatter
 			data1.FloatData = 0.123f;
 			data1.StringData = "bzzzz";
 			data1.EnumData = TempEnum.Third;
-			//RegistrySaver.Save(data1, registryRootName);
+			data1.ObjectData.Name = "WTF";
+			data1.ObjectData.Value = "OMG";
+			RegistrySaver.Save(data1, registryRootName);
 
 			TempData data2 = new TempData();
+			data2.ObjectData = null;
 			RegistrySaver.Load(data2, registryRootName);
 		}
 	}
