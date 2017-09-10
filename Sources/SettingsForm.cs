@@ -11,7 +11,7 @@ namespace FB2Formatter
 {
 	public partial class SettingsForm : Form
 	{
-		private Config localConfig;
+		private ConfigData localConfig;
 
 
 		public SettingsForm()

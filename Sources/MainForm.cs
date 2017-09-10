@@ -24,13 +24,13 @@ namespace FB2Formatter
 		{
 			base.OnLoad(e);
 
-			Config.Main.Load();
+			Config.Load();
 		}
 
 
 		protected override void OnClosed(EventArgs e)
 		{
-			Config.Main.Save();
+			Config.Save();
 
 			base.OnClosed(e);
 		}

@@ -14,45 +14,41 @@ using Microsoft.Win32;
 
 namespace FB2Formatter
 {
-	public class Config
+	public class ConfigData
 	{
-		private static readonly string registryRootName = @"Software\SteexSoft\FB2Formatter";
-
 		// Data fields.
 		private bool indentIsTab;
 
 		// Properties.
+		[RegistrySave("IndentIsTab", false, false)]
 		public bool IndentIsTab { get { return indentIsTab; } set { indentIsTab = value; IndentChar = indentIsTab ? '\t' : ' '; } }
 		[Browsable(false)]
 		public char IndentChar { get; private set; }
+		[RegistrySave("IndentLength", false, 1)]
 		public int IndentLength { get; set; }
+		[RegistrySave("BinaryLineSize", false, 80)]
 		public int BinaryLineSize { get; set; }
 
+		[RegistrySave("FormatNotes", false, false)]
 		public bool FormatNotes { get; set; }
+		[RegistrySave("RenumberNotes", false, false)]
 		public bool RenumberNotes { get; set; }
+		[RegistrySave("FormatComments", false, false)]
 		public bool FormatComments { get; set; }
+		[RegistrySave("RenumberComments", false, false)]
 		public bool RenumberComments { get; set; }
 
 
-		// The config used by application.
-		public static Config Main { get; private set; }
-
-
-		static Config()
-		{
-			Main = new Config();
-		}
-
-		private Config()
+		public ConfigData()
 		{
 			IndentIsTab = false;
 			IndentLength = 1;
 			BinaryLineSize = 80;
 		}
 
-		public Config Clone()
+		public ConfigData Clone()
 		{
-			Config copy = new Config();
+			ConfigData copy = new ConfigData();
 
 			copy.IndentIsTab = IndentIsTab;
 			copy.IndentLength = IndentLength;
@@ -67,55 +63,54 @@ namespace FB2Formatter
 		}
 
 
-		public static void SetMain(Config config)
+		public void Load(string key)
 		{
-			Main = config.Clone();
+			RegistrySaver.Load(this, key);
 		}
 
-
-		public void Load()
-		{
-			RegistryKey settingsRoot = Registry.CurrentUser.OpenSubKey(registryRootName);
-			if (settingsRoot != null)
-			{
-				IndentIsTab = Utils.ReadRegistryValue(settingsRoot, "IndentIsTab", IndentIsTab);
-				IndentLength = Utils.ReadRegistryValue(settingsRoot, "IndentLength", IndentLength);
-				BinaryLineSize = Utils.ReadRegistryValue(settingsRoot, "BinaryLineSize", BinaryLineSize);
-
-				FormatNotes = Utils.ReadRegistryValue(settingsRoot, "FormatNotes", FormatNotes);
-				RenumberNotes = Utils.ReadRegistryValue(settingsRoot, "RenumberNotes", RenumberNotes);
-				FormatComments = Utils.ReadRegistryValue(settingsRoot, "FormatComments", FormatComments);
-				RenumberComments = Utils.ReadRegistryValue(settingsRoot, "RenumberComments", RenumberComments);
-
-				// All done.
-				settingsRoot.Close();
-			}
-		}
-
-		public void Save()
+		public void Save(string key)
 		{
 			try
 			{
-				RegistryKey settingsRoot = Registry.CurrentUser.CreateSubKey(registryRootName);
-				if (settingsRoot != null)
-				{
-					Utils.WriteRegistryValue(settingsRoot, "IndentIsTab", IndentIsTab);
-					Utils.WriteRegistryValue(settingsRoot, "IndentLength", IndentLength);
-					Utils.WriteRegistryValue(settingsRoot, "BinaryLineSize", BinaryLineSize);
-
-					Utils.WriteRegistryValue(settingsRoot, "FormatNotes", FormatNotes);
-					Utils.WriteRegistryValue(settingsRoot, "RenumberNotes", RenumberNotes);
-					Utils.WriteRegistryValue(settingsRoot, "FormatComments", FormatComments);
-					Utils.WriteRegistryValue(settingsRoot, "RenumberComments", RenumberComments);
-
-					// All done.
-					settingsRoot.Close();
-				}
+				RegistrySaver.Save(this, key);
 			}
 			catch
 			{
 			}
 		}
-		
+
+	}
+
+
+	public static class Config
+	{
+		private static readonly string registryRootName = @"Software\SteexSoft\FB2Formatter";
+
+
+		// The config used by application.
+		public static ConfigData Main { get; private set; }
+
+
+		static Config()
+		{
+			Main = new ConfigData();
+		}
+
+		public static void SetMain(ConfigData data)
+		{
+			Main = data.Clone();
+		}
+
+
+		public static void Load()
+		{
+			Main.Load(registryRootName);
+		}
+
+		public static void Save()
+		{
+			Main.Save(registryRootName);
+		}
+
 	}
 }
