@@ -20,6 +20,16 @@ namespace FB2Formatter
 			Preformatted,
 		}
 
+		// Footnote or comment info.
+		private class ReferenceInfo
+		{
+			// Link to the ref's content (attribute "l:href").
+			public string Href { get; set; }
+			// Link to the ref's type (usually "note" or "comment"; attribute "type").
+			public string Type { get; set; }
+			// Text of the reference inside the main text (usually something like "[1]").
+			public string Text { get; set; }
+		}
 
 		private class BookNodeInfo
 		{
@@ -186,22 +196,27 @@ namespace FB2Formatter
 			"XML error at line {1}, char {2}:" + Environment.NewLine +
 			"{3}";
 
+
+		private static readonly string formatNoteName = "[{0}]";
+		private static readonly string formatCommentName = "{{{1}}}";
+
 		private string sourceFileName;
 		private string targetFileName;
 
-		private string sourceEncodingName;
-		private EncodingData targetEncoding;
-		private StringBuilder output;
+		private string sourceEncodingName = null;
+		private EncodingData targetEncoding = new EncodingData(Encoding.UTF8);
+		private StringBuilder output = new StringBuilder();
+
+		private List<ReferenceInfo> references = new List<ReferenceInfo>();
+		private ReferenceInfo currentReference;
+		private int nextNoteNumber = 1;
+		private int nextCommentNumber = 1;
 
 
 		public BookFormatter(string sourceFile, string targetFile)
 		{
 			sourceFileName = sourceFile;
 			targetFileName = targetFile;
-
-			sourceEncodingName = null;
-			targetEncoding = new EncodingData(Encoding.UTF8);
-			output = new StringBuilder();
 		}
 
 		public void FormatBook()
@@ -209,6 +224,7 @@ namespace FB2Formatter
 			ProcessSourceBook();
 			WriteTargetBook();
 		}
+
 
 		private void ProcessSourceBook()
 		{
@@ -234,11 +250,14 @@ namespace FB2Formatter
 								string elementName = reader.Name;
 								bool elementEmpty = reader.IsEmptyElement;
 
+								ReferenceInfo refInfo = (elementName == "a") ? new ReferenceInfo() : null;
+
 								WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.Count);
 
 								while (reader.MoveToNextAttribute())
 								{
 									WriteElementAttribute(reader.Name, reader.Value);
+									FillReferenceInfo(refInfo, reader.Name, reader.Value);
 								}
 
 								if (elementEmpty)
@@ -248,6 +267,7 @@ namespace FB2Formatter
 								else
 								{
 									WriteElementCloser();
+									RegisterReference(refInfo);
 								}
 
 								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
@@ -272,6 +292,12 @@ namespace FB2Formatter
 								}
 
 								WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.Count);
+
+								if (reader.Name == "a" && currentReference != null)
+								{
+									RenameReferenceIfNecessary(currentReference);
+									currentReference = null;
+								}
 								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
 								binaryElement = false;
 								break;
@@ -292,6 +318,11 @@ namespace FB2Formatter
 								else
 								{
 									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+								}
+
+								if (currentReference != null)
+								{
+									currentReference.Text += reader.Value;
 								}
 								break;
 
@@ -522,6 +553,50 @@ namespace FB2Formatter
 		private void WriteLineIndent(int level)
 		{
 			output.Append(new string(Config.Main.IndentChar, Config.Main.IndentSize * level));
+		}
+
+
+		private void FillReferenceInfo(ReferenceInfo refInfo, string attrName, string attrValue)
+		{
+			if (refInfo != null)
+			{
+				if (attrName == "l:href")
+				{
+					refInfo.Href = attrValue;
+				}
+				else if (attrName == "type")
+				{
+					refInfo.Type = attrValue;
+				}
+			}
+		}
+
+		private void RegisterReference(ReferenceInfo refInfo)
+		{
+			if (refInfo != null)
+			{
+				if (refInfo.Type == "note" && Config.Main.FormatNotes ||
+					refInfo.Type == "comment" && Config.Main.FormatComments)
+				{
+					references.Add(refInfo);
+					currentReference = refInfo;
+				}
+			}
+		}
+
+		private void RenameReferenceIfNecessary(ReferenceInfo refInfo)
+		{
+			if (refInfo.Type == "note" && Config.Main.RenumberNotes)
+			{
+				refInfo.Text = string.Format(formatNoteName, nextNoteNumber);
+				nextNoteNumber += 1;
+			}
+
+			if (refInfo.Type == "comment" && Config.Main.RenumberComments)
+			{
+				refInfo.Text = string.Format(formatCommentName, nextCommentNumber);
+				nextCommentNumber += 1;
+			}
 		}
 	}
 }
