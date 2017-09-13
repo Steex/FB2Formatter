@@ -521,7 +521,7 @@ namespace FB2Formatter
 
 		private void WriteLineIndent(int level)
 		{
-			output.Append(new string(Config.Main.IndentChar, Config.Main.IndentLength * level));
+			output.Append(new string(Config.Main.IndentChar, Config.Main.IndentSize * level));
 		}
 	}
 }

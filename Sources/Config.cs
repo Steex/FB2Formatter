@@ -24,8 +24,8 @@ namespace FB2Formatter
 		public bool IndentIsTab { get { return indentIsTab; } set { indentIsTab = value; IndentChar = indentIsTab ? '\t' : ' '; } }
 		[Browsable(false)]
 		public char IndentChar { get; private set; }
-		[RegistrySave("IndentLength", false, 1)]
-		public int IndentLength { get; set; }
+		[RegistrySave("IndentSize", false, 1)]
+		public int IndentSize { get; set; }
 		[RegistrySave("BinaryLineSize", false, 80)]
 		public int BinaryLineSize { get; set; }
 
@@ -42,7 +42,7 @@ namespace FB2Formatter
 		public ConfigData()
 		{
 			IndentIsTab = false;
-			IndentLength = 1;
+			IndentSize = 1;
 			BinaryLineSize = 80;
 		}
 
@@ -51,7 +51,7 @@ namespace FB2Formatter
 			ConfigData copy = new ConfigData();
 
 			copy.IndentIsTab = IndentIsTab;
-			copy.IndentLength = IndentLength;
+			copy.IndentSize = IndentSize;
 			copy.BinaryLineSize = BinaryLineSize;
 
 			copy.FormatNotes = FormatNotes;
