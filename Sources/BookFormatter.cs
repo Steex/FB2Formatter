@@ -20,6 +20,15 @@ namespace FB2Formatter
 			Preformatted,
 		}
 
+		private enum BookBodyType
+		{
+			None,
+			Main,
+			Notes,
+			Comments,
+			Unknown,
+		}
+
 		// Footnote or comment info.
 		private class ReferenceInfo
 		{
@@ -196,6 +205,16 @@ namespace FB2Formatter
 			"XML error at line {1}, char {2}:" + Environment.NewLine +
 			"{3}";
 
+		private static readonly string errRefWithoutHref =
+			"\"{0}\"" + Environment.NewLine +
+			"A reference without a href is found." + Environment.NewLine +
+			"Notes/comments in the book cannot be formatted.";
+
+		private static readonly string errRefNotLocal =
+			"\"{0}\"" + Environment.NewLine +
+			"A reference that is not local is found." + Environment.NewLine +
+			"Notes/comments in the book cannot be formatted.";
+
 
 		private static readonly string formatNoteName = "[{0}]";
 		private static readonly string formatCommentName = "{{{1}}}";
@@ -207,6 +226,9 @@ namespace FB2Formatter
 		private EncodingData targetEncoding = new EncodingData(Encoding.UTF8);
 		private StringBuilder output = new StringBuilder();
 
+		private BookBodyType bodyType;
+		private int bodyNumber;
+		private Dictionary<string, ReferenceInfo> referencez;
 		private List<ReferenceInfo> references = new List<ReferenceInfo>();
 		private ReferenceInfo currentReference;
 		private int nextNoteNumber = 1;
@@ -221,8 +243,116 @@ namespace FB2Formatter
 
 		public void FormatBook()
 		{
+			if (Config.Main.FormatNotes || Config.Main.FormatComments)
+			{
+				CollectReferences();
+			}
+
 			ProcessSourceBook();
 			WriteTargetBook();
+		}
+
+
+		private void CollectReferences()
+		{
+			referencez = new Dictionary<string, ReferenceInfo>();
+
+			XmlDocument book = BookUtils.OpenBook(sourceFileName);
+
+			bodyType = BookBodyType.None;
+			bodyNumber = 0;
+			CollectReferences_ProcessElement(book.DocumentElement);
+		}
+
+		private void CollectReferences_ProcessElement(XmlElement element)
+		{
+			foreach (XmlElement child in element.ChildNodes.OfType<XmlElement>())
+			{
+				// Process the child.
+				switch (child.Name)
+				{
+					case "body":
+						CollectReferences_ProcessBody(child); 
+						break;
+					case "a":
+						CollectReferences_ProcessAnchor(child);
+						break;
+					case "section":
+						CollectReferences_ProcessSection(child);
+						break;
+				}
+
+				// Recursive process child's subnodes.
+				CollectReferences_ProcessElement(child);
+			}
+		}
+
+		private void CollectReferences_ProcessBody(XmlElement element)
+		{
+			bodyNumber += 1;
+
+			switch (element.GetAttribute("type"))
+			{
+				case "":
+					bodyType = (bodyNumber == 1) ? BookBodyType.Main : BookBodyType.Comments;
+					break;
+				case "notes":
+					bodyType = BookBodyType.Notes;
+					break;
+				case "comments":
+					bodyType = BookBodyType.Comments;
+					break;
+				default:
+					bodyType = BookBodyType.Unknown;
+					break;
+			}
+		}
+
+		private void CollectReferences_ProcessAnchor(XmlElement element)
+		{
+			if (bodyType == BookBodyType.Main)
+			{
+				// Collect a ref info.
+				ReferenceInfo refInfo = new ReferenceInfo();
+				refInfo.Href = element.GetAttribute("l:href");
+				refInfo.Type = element.GetAttribute("type");
+
+				// Make sure the href is set.
+				if (string.IsNullOrWhiteSpace(refInfo.Href))
+				{
+					throw new Exception(string.Format(errRefWithoutHref, sourceFileName));
+				}
+
+				// Make sure the href is local.
+				if (refInfo.Href[0] != '#')
+				{
+					throw new Exception(string.Format(errRefNotLocal, sourceFileName));
+				}
+
+				// Remove '#' at the href's start.
+				refInfo.Href = refInfo.Href.Remove(0, 1);
+
+				// Remember the reference.
+				referencez.Add(refInfo.Href, refInfo);
+			}
+		}
+
+		private void CollectReferences_ProcessSection(XmlElement element)
+		{
+			// Add an implicit "comment" mark to all comment references.
+			if (bodyType == BookBodyType.Comments)
+			{
+				string sectionId = element.GetAttribute("id");
+				if (!string.IsNullOrWhiteSpace(sectionId))
+				{
+					ReferenceInfo refInfo = null;
+					referencez.TryGetValue(sectionId, out refInfo);
+					if (refInfo != null && string.IsNullOrEmpty(refInfo.Type))
+					{
+						refInfo.Type = "comment";
+					}
+				}
+			}
 		}
 
 
