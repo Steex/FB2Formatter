@@ -228,9 +228,9 @@ namespace FB2Formatter
 
 		private BookBodyType bodyType;
 		private int bodyNumber;
-		private Dictionary<string, ReferenceInfo> referencez;
-		private List<ReferenceInfo> references = new List<ReferenceInfo>();
+		private Dictionary<string, ReferenceInfo> references;
 		private ReferenceInfo currentReference;
+		private int currentReferenceTextStart;
 		private int nextNoteNumber = 1;
 		private int nextCommentNumber = 1;
 
@@ -255,7 +255,7 @@ namespace FB2Formatter
 
 		private void CollectReferences()
 		{
-			referencez = new Dictionary<string, ReferenceInfo>();
+			references = new Dictionary<string, ReferenceInfo>();
 
 			XmlDocument book = BookUtils.OpenBook(sourceFileName);
 
@@ -333,7 +333,7 @@ namespace FB2Formatter
 				refInfo.Href = refInfo.Href.Remove(0, 1);
 
 				// Remember the reference.
-				referencez.Add(refInfo.Href, refInfo);
+				references.Add(refInfo.Href, refInfo);
 			}
 		}
 
@@ -346,7 +346,7 @@ namespace FB2Formatter
 				if (!string.IsNullOrWhiteSpace(sectionId))
 				{
 					ReferenceInfo refInfo = null;
-					referencez.TryGetValue(sectionId, out refInfo);
+					references.TryGetValue(sectionId, out refInfo);
 					if (refInfo != null && string.IsNullOrEmpty(refInfo.Type))
 					{
 						refInfo.Type = "comment";
@@ -380,14 +380,16 @@ namespace FB2Formatter
 								string elementName = reader.Name;
 								bool elementEmpty = reader.IsEmptyElement;
 
-								ReferenceInfo refInfo = (elementName == "a") ? new ReferenceInfo() : null;
-
 								WriteElementOpeningTag(elementName, nodeStack.FormatMode, nodeStack.Count);
 
 								while (reader.MoveToNextAttribute())
 								{
 									WriteElementAttribute(reader.Name, reader.Value);
-									FillReferenceInfo(refInfo, reader.Name, reader.Value);
+
+									if (!elementEmpty && elementName == "a" && reader.Name == "l:href")
+									{
+										currentReference = FindReference(reader.Value);
+									}
 								}
 
 								if (elementEmpty)
@@ -397,7 +399,11 @@ namespace FB2Formatter
 								else
 								{
 									WriteElementCloser();
-									RegisterReference(refInfo);
+								}
+
+								if (currentReference != null)
+								{
+									currentReferenceTextStart = output.Length;
 								}
 
 								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
@@ -421,13 +427,14 @@ namespace FB2Formatter
 									DeleteTrailingWhitespace();
 								}
 
-								WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.Count);
-
 								if (reader.Name == "a" && currentReference != null)
 								{
-									RenameReferenceIfNecessary(currentReference);
+									SetReferenceName(currentReference, output.ToString(currentReferenceTextStart, output.Length - currentReferenceTextStart));
 									currentReference = null;
 								}
+
+								WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.Count);
+
 								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
 								binaryElement = false;
 								break;
@@ -448,11 +455,6 @@ namespace FB2Formatter
 								else
 								{
 									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
-								}
-
-								if (currentReference != null)
-								{
-									currentReference.Text += reader.Value;
 								}
 								break;
 
@@ -686,46 +688,41 @@ namespace FB2Formatter
 		}
 
 
-		private void FillReferenceInfo(ReferenceInfo refInfo, string attrName, string attrValue)
+		private ReferenceInfo FindReference(string href)
 		{
-			if (refInfo != null)
+			// Empty hrefs are not allowed.
+			if (string.IsNullOrWhiteSpace(href))
 			{
-				if (attrName == "l:href")
-				{
-					refInfo.Href = attrValue;
-				}
-				else if (attrName == "type")
-				{
-					refInfo.Type = attrValue;
-				}
+				return null;
 			}
+
+			// Remove the local link prefix.
+			if (href[0] == '#')
+			{
+				href = href.Remove(0, 1);
+			}
+
+			// Find the info.
+			ReferenceInfo refInfo = null;
+			references.TryGetValue(href, out refInfo);
+			return refInfo;
 		}
 
-		private void RegisterReference(ReferenceInfo refInfo)
-		{
-			if (refInfo != null)
-			{
-				if (refInfo.Type == "note" && Config.Main.FormatNotes ||
-					refInfo.Type == "comment" && Config.Main.FormatComments)
-				{
-					references.Add(refInfo);
-					currentReference = refInfo;
-				}
-			}
-		}
-
-		private void RenameReferenceIfNecessary(ReferenceInfo refInfo)
+		private void SetReferenceName(ReferenceInfo refInfo, string defaultName)
 		{
 			if (refInfo.Type == "note" && Config.Main.RenumberNotes)
 			{
 				refInfo.Text = string.Format(formatNoteName, nextNoteNumber);
 				nextNoteNumber += 1;
 			}
-
-			if (refInfo.Type == "comment" && Config.Main.RenumberComments)
+			else if (refInfo.Type == "comment" && Config.Main.RenumberComments)
 			{
 				refInfo.Text = string.Format(formatCommentName, nextCommentNumber);
 				nextCommentNumber += 1;
+			}
+			else
+			{
+				refInfo.Text = defaultName;
 			}
 		}
 	}
