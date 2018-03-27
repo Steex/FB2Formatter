@@ -38,6 +38,9 @@ namespace FB2Formatter
 		[RegistrySave("RenumberComments", false, false)]
 		public bool RenumberComments { get; set; }
 
+		[RegistrySave("FormatQuotationMarks", false, false)]
+		public bool FormatQuotationMarks { get; set; }
+
 
 		public ConfigData()
 		{
@@ -58,6 +61,8 @@ namespace FB2Formatter
 			copy.RenumberNotes = RenumberNotes;
 			copy.FormatComments = FormatComments;
 			copy.RenumberComments = RenumberComments;
+
+			copy.FormatQuotationMarks = FormatQuotationMarks;
 
 			return copy;
 		}
