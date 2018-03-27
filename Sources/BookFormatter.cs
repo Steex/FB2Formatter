@@ -360,6 +360,7 @@ namespace FB2Formatter
 		{
 			BookNodeStack nodeStack = new BookNodeStack(TextFormatMode.Structured);
 			bool allowWhitespace = false;
+			bool wordBegin = true;
 			bool binaryElement = false;
 
 			// Read the source book and write formatted content into a buffer.
@@ -409,6 +410,7 @@ namespace FB2Formatter
 								}
 
 								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
+								wordBegin = wordBegin || nodeStack.FormatMode != TextFormatMode.Inline;
 
 								if (!elementEmpty)
 								{
@@ -438,6 +440,7 @@ namespace FB2Formatter
 								WriteElementClosingTag(reader.Name, insideFormatMode, nodeStack.Count);
 
 								allowWhitespace = allowWhitespace && nodeStack.FormatMode != TextFormatMode.Structured;
+								wordBegin = wordBegin || nodeStack.FormatMode != TextFormatMode.Inline;
 								binaryElement = false;
 								break;
 
@@ -445,7 +448,7 @@ namespace FB2Formatter
 							case XmlNodeType.SignificantWhitespace:
 								if (nodeStack.FormatMode != TextFormatMode.Structured)
 								{
-									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace, ref wordBegin);
 								}
 								break;
 
@@ -456,13 +459,14 @@ namespace FB2Formatter
 								}
 								else
 								{
-									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace);
+									WriteText(reader.Value, nodeStack.FormatMode, ref allowWhitespace, ref wordBegin);
 								}
 								break;
 
 							case XmlNodeType.Comment:
 								WriteComment(reader.Value, nodeStack.FormatMode, nodeStack.Count);
 								allowWhitespace = true;
+								wordBegin = true;
 								break;
 						}
 					}
@@ -544,7 +548,7 @@ namespace FB2Formatter
 			output.Append('"');
 		}
 
-		private void WriteText(string text, TextFormatMode formatMode, ref bool allowWhitespace)
+		private void WriteText(string text, TextFormatMode formatMode, ref bool allowWhitespace, ref bool wordBegin)
 		{
 			switch (formatMode)
 			{
@@ -552,17 +556,18 @@ namespace FB2Formatter
 					throw new Exception("Unexpected text in the current context.");
 
 				case TextFormatMode.Inline:
-					WriteInlineText(text, ref allowWhitespace);
+					WriteInlineText(text, ref allowWhitespace, ref wordBegin);
 					break;
 
 				case TextFormatMode.Preformatted:
 					WriteXmlString(text, false);
 					allowWhitespace = true;
+					wordBegin = true;
 					break;
 			}
 		}
 
-		private void WriteInlineText(string text, ref bool allowWhitespace)
+		private void WriteInlineText(string text, ref bool allowWhitespace, ref bool wordBegin)
 		{
 			foreach (char chr in text)
 			{
@@ -586,16 +591,28 @@ namespace FB2Formatter
 				}
 
 				// Write the resolved symbol.
-				if (!isWhitespace)
+				if (chr == '"' && Config.Main.FormatQuotationMarks)
+				{
+					WriteXmlChar(wordBegin ? '«' : '»', false);
+				}
+				else if (!isWhitespace)
 				{
 					WriteXmlChar(chr, false);
-					allowWhitespace = true;
 				}
 				else if (allowWhitespace)
 				{
 					output.Append(' ');
-					allowWhitespace = false;
 				}
+
+				// Prepare to the next symbol.
+				allowWhitespace = !isWhitespace;
+
+				wordBegin =
+					isWhitespace ||
+					charCategory == UnicodeCategory.SpaceSeparator ||
+					chr == '(' ||
+					chr == '[' ||
+					chr == '-';
 			}
 		}
 
