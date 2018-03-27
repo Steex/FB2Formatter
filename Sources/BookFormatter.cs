@@ -386,7 +386,9 @@ namespace FB2Formatter
 								{
 									WriteElementAttribute(reader.Name, reader.Value);
 
-									if (!elementEmpty && elementName == "a" && reader.Name == "l:href")
+									if (!elementEmpty &&
+										references != null &&
+										elementName == "a" && reader.Name == "l:href")
 									{
 										currentReference = FindReference(reader.Value);
 									}
