@@ -28,12 +28,13 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
 			this.textLog = new System.Windows.Forms.TextBox();
 			this.menuStrip1 = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.menuExit = new System.Windows.Forms.ToolStripMenuItem();
 			this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.menuOptions = new System.Windows.Forms.ToolStripMenuItem();
-			this.menuExit = new System.Windows.Forms.ToolStripMenuItem();
 			this.dropletConvertPicturesToXml = new FB2Formatter.Droplet();
 			this.dropletExtractPicturesToFiles = new FB2Formatter.Droplet();
 			this.dropletExtractPicturesToXml = new FB2Formatter.Droplet();
@@ -74,6 +75,14 @@
 			this.fileToolStripMenuItem.Size = new System.Drawing.Size(35, 20);
 			this.fileToolStripMenuItem.Text = "&File";
 			// 
+			// menuExit
+			// 
+			this.menuExit.Name = "menuExit";
+			this.menuExit.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.F4)));
+			this.menuExit.Size = new System.Drawing.Size(132, 22);
+			this.menuExit.Text = "E&xit";
+			this.menuExit.Click += new System.EventHandler(this.menuExit_Click);
+			// 
 			// toolsToolStripMenuItem
 			// 
 			this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -88,14 +97,6 @@
 			this.menuOptions.Size = new System.Drawing.Size(123, 22);
 			this.menuOptions.Text = "&Options...";
 			this.menuOptions.Click += new System.EventHandler(this.menuOptions_Click);
-			// 
-			// menuExit
-			// 
-			this.menuExit.Name = "menuExit";
-			this.menuExit.ShortcutKeys = ((System.Windows.Forms.Keys)((System.Windows.Forms.Keys.Alt | System.Windows.Forms.Keys.F4)));
-			this.menuExit.Size = new System.Drawing.Size(132, 22);
-			this.menuExit.Text = "E&xit";
-			this.menuExit.Click += new System.EventHandler(this.menuExit_Click);
 			// 
 			// dropletConvertPicturesToXml
 			// 
@@ -194,6 +195,7 @@
 			this.Controls.Add(this.dropletFormatBookPictures);
 			this.Controls.Add(this.textLog);
 			this.Controls.Add(this.menuStrip1);
+			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MainMenuStrip = this.menuStrip1;
 			this.Name = "MainForm";
 			this.Text = "FB2 Formatter";
