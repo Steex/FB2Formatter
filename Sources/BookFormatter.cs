@@ -63,7 +63,7 @@ namespace FB2Formatter
 				/*formatted text*/ "p", "v", "subtitle", "text-author", "th", "td",
 				/*author*/         "first-name", "middle-name", "last-name", "nickname", "home-page", "email",
 				/*title-info*/     "genre", "id", "book-title", "lang", "src-lang", "keywords", "date",
-				/*document-info*/  "src-url", "src-ocr", "version", "program-used",
+				/*document-info*/  "src-url", "src-ocr", "version", "program-used", "program-id",
 				/*publish-info*/   "book-name", "publisher", "city", "year", "isbn",
 				/*custom-info*/    "custom-info"
 			};
